@@ -8,7 +8,7 @@ import numpy as np
 import random
 import os
 import logging
-from Models import IF
+from models import IF, SignedIF
 
 def seed_all(seed=1029):
     random.seed(seed)

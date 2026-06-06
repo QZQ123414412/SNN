@@ -5,10 +5,10 @@ import warnings
 import torch.nn as nn
 import torch.nn.parallel
 import torch.optim
-from Models import modelpool
-from Preprocess import datapool
+from models import modelpool
+from preprocess import datapool
 from utils import train, val, seed_all, get_logger
-from Models.layer import *
+from models.layer import *
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
 # just use default setting
