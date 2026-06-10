@@ -1,3 +1,4 @@
+# 测试SignedIF模型并输出脉冲统计
 import argparse
 import os
 import torch
@@ -10,6 +11,11 @@ from preprocess import datapool
 from utils import train, val, seed_all, get_logger
 from models.layer import *
 from models import SignedIF
+from spike_stats import (
+    collect_signed_spike_stats,
+    format_spike_stats_report,
+    reset_signed_spike_stats,
+)
 
 parser = argparse.ArgumentParser(description='PyTorch SNM Signed Spike Testing')
 # just use default setting
@@ -101,8 +107,11 @@ def main():
     print(f"Time steps: {args.time}")
 
     # Test
+    reset_signed_spike_stats(model, SignedIF)
     acc = val(model, test_loader, device, args.time)
     print(f"Test Accuracy: {acc:.2f}%")
+    layer_stats = collect_signed_spike_stats(model, SignedIF, nn.Conv2d, nn.Linear)
+    print(format_spike_stats_report(layer_stats))
 
 
 
