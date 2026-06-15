@@ -47,16 +47,16 @@ D:\Anaconda\envs\ann2snn\python.exe
 
 ## 3. 完整运行命令
 
-在 `D:\workspace\QCFS` 下运行：
+在仓库根目录下运行：
 
 ```powershell
-D:\Anaconda\envs\ann2snn\python.exe run_stats_ablation.py `
+D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_stats_ablation.py `
   -data=cifar100 `
   -id=cifar100-vgg16-l8-example `
   -dev=0 `
-  --time_steps 1 2 4 8 16 32 64 `
+  --time_steps 1 2 4 8 16 32 `
   --cali_batches 5 `
-  --output STATS_ABLATION_cifar100.md
+  --output docs\results\spike_stats\STATS_ABLATION_cifar100.md
 ```
 
 其中：
@@ -72,18 +72,18 @@ D:\Anaconda\envs\ann2snn\python.exe run_stats_ablation.py `
 
 ## 4. 建议的续跑策略
 
-完整实验耗时较长，尤其是 `T=64` 和带 FTBC 的配置。为了避免中途超时导致结果丢失，建议分批运行。
+完整实验耗时较长，尤其是高时间步和带 FTBC 的配置。为了避免中途超时导致结果丢失，可以分批运行。
 
-例如，只运行 `T=64`：
+例如，只运行 `T=32`：
 
 ```powershell
-D:\Anaconda\envs\ann2snn\python.exe run_stats_ablation.py `
+D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_stats_ablation.py `
   -data=cifar100 `
   -id=cifar100-vgg16-l8-example `
   -dev=0 `
-  --time_steps 64 `
+  --time_steps 32 `
   --cali_batches 5 `
-  --output STATS_ABLATION_cifar100_T64.md
+  --output docs\results\spike_stats\STATS_ABLATION_cifar100_T32.md
 ```
 
 后续可以进一步改进脚本，让它在每完成一个 `(config, T)` 后立即写入 CSV，这样即使实验被中断也不会丢失已有结果。

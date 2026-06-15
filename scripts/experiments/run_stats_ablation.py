@@ -1,4 +1,4 @@
-# 运行四配置脉冲统计消融实验
+# 运行六配置脉冲统计消融实验
 """
 Ablation study for spike statistics using the thesis configurations:
 
@@ -18,7 +18,14 @@ Reported metrics:
 import argparse
 import copy
 import os
+import sys
 import time
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+os.chdir(REPO_ROOT)
 
 import torch
 import torch.nn as nn
@@ -232,7 +239,9 @@ def main():
 
     print_summary_table(results, args.time_steps)
     output_path = args.output or os.path.join(
-        os.path.dirname(__file__),
+        "docs",
+        "results",
+        "spike_stats",
         f"STATS_ABLATION_{args.dataset}.md",
     )
     write_markdown_report(output_path, args, results, layer_results)

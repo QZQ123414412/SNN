@@ -16,6 +16,12 @@ import copy
 import os
 import sys
 import time
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+os.chdir(REPO_ROOT)
 
 import torch
 import torch.nn as nn
@@ -156,7 +162,12 @@ def main():
     print(sep)
 
     # ── write markdown report ──
-    md_path = os.path.join(os.path.dirname(__file__), f"ABLATION_RESULTS_{args.dataset}{args.output_suffix}.md")
+    md_path = os.path.join(
+        "docs",
+        "results",
+        "regular",
+        f"ABLATION_RESULTS_{args.dataset}{args.output_suffix}.md",
+    )
     with open(md_path, "w") as f:
         f.write(f"# Ablation Study: SNM++ + FTBC on {args.dataset.upper()} / VGG16\n\n")
         f.write(f"- Calibration: alpha={args.alpha}, batches={args.cali_batches}\n")

@@ -70,6 +70,29 @@ def reset_signed_spike_stats(model, signed_if_type):
             module.reset_stats()
 
 
+def set_signed_spike_stats_enabled(model, signed_if_type, enabled):
+    for module in model.modules():
+        if isinstance(module, signed_if_type):
+            module.set_collect_spike_stats(enabled)
+
+
+def summarize_ftbc_storage(model, signed_if_type):
+    parameters = 0
+    storage_bytes = 0
+    layers = 0
+    for module in model.modules():
+        if isinstance(module, signed_if_type):
+            parameters += module.ftbc_parameter_count()
+            storage_bytes += module.ftbc_storage_bytes()
+            if module.ftbc_parameter_count() > 0:
+                layers += 1
+    return {
+        "layers": layers,
+        "parameters": int(parameters),
+        "bytes": int(storage_bytes),
+    }
+
+
 def collect_signed_spike_stats(model, signed_if_type, conv2d_type, linear_type):
     stats = []
     pending_compute = None

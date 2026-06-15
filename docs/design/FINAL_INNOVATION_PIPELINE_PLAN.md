@@ -404,7 +404,7 @@ positive_sops
 negative_sops
 ```
 
-### `run_stats_ablation.py`
+### `scripts/experiments/run_stats_ablation.py`
 
 增加新配置，不改变原 A-F：
 
@@ -592,4 +592,3 @@ CIFAR-10或CIFAR-100 / ResNet20或ResNet34
    从真实 SignedIF 多时间步动力学中学习非对称转换残差分布，并在源 ANN 微调阶段注入该残差，提高固定低时间步下的转换鲁棒性。
 
 低秩 bias 压缩、SOPs 和能耗评价是第一点的重要组成部分，但不应被单独夸大为第三个完全独立的算法贡献。
-

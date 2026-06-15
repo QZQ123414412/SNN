@@ -1,4 +1,4 @@
-# Spike Statistics Documentation
+# 脉冲统计正式结果
 
 This folder documents the three newly added physical/statistical quantities for
 the ANN-to-SNN conversion experiments:
@@ -7,21 +7,21 @@ the ANN-to-SNN conversion experiments:
 2. Positive / negative spike rate
 3. Per-layer spike sparsity
 
-The implementation is in:
+实现位置：
 
 - `spike_stats.py`
-- `main_test_signed.py`
-- `run_stats_ablation.py`
+- `scripts/evaluate/main_test_signed.py`
+- `scripts/experiments/run_stats_ablation.py`
 
 The current experiment branch is:
 
 - `sops-spike-stats`
 
-## Files
+## 相关文档
 
-- `metric_definitions.md`: formal definitions, formulas, and implementation notes.
-- `experiment_protocol.md`: how to run the four-configuration ablation experiment.
-- `partial_cifar100_results.md`: currently collected CIFAR-100 / VGG16 results.
+- `../../methodology/metric_definitions.md`：指标公式和实现约定；
+- `../../methodology/experiment_protocol.md`：六配置实验运行协议；
+- `ABLATION_RESULTS_VGG_cifar100_add_3_quantity_v2.md`：CIFAR-100/VGG16 正式结果。
 
 ## Main Convention
 

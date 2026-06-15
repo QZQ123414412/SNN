@@ -99,12 +99,17 @@ class SignedIF(nn.Module):
         self.enable_signed = enable_signed  # 控制是否启用负脉冲（SNM）
         self.enable_r0 = enable_r0          # 控制是否启用 R0 无负债规则
         # ======================= [新增] FTBC 偏置存储 =====================
+        self.ftbc_mode = "full"
         self.time_based_bias = None         # 逐时间步通道级偏置，由 calibration.py 写入
+        self.bias_base = None
+        self.bias_slope = None
+        self.bias_state = None
         # ==================================================================
 
         self.pos_spike_count = 0
         self.neg_spike_count = 0
         self.total_neurons = 0
+        self.collect_spike_stats = True
 
     def init_mem(self):
         self.mem = None
@@ -113,6 +118,9 @@ class SignedIF(nn.Module):
     # ========================= [新增] FTBC 重置方法 =======================
     def reset_bias(self):
         self.time_based_bias = None
+        self.bias_base = None
+        self.bias_slope = None
+        self.bias_state = None
     # =====================================================================
 
     def reset_stats(self):
@@ -120,20 +128,95 @@ class SignedIF(nn.Module):
         self.neg_spike_count = 0
         self.total_neurons = 0
 
+    def set_collect_spike_stats(self, enabled):
+        self.collect_spike_stats = bool(enabled)
+
     def get_stats(self):
+        pos_spike_count = int(self.pos_spike_count)
+        neg_spike_count = int(self.neg_spike_count)
+        total_neurons = int(self.total_neurons)
         return {
-            'pos_spike_count': self.pos_spike_count,
-            'neg_spike_count': self.neg_spike_count,
-            'total_neurons': self.total_neurons,
-            'pos_spike_rate': self.pos_spike_count / max(self.total_neurons, 1),
-            'neg_spike_rate': self.neg_spike_count / max(self.total_neurons, 1)
+            'pos_spike_count': pos_spike_count,
+            'neg_spike_count': neg_spike_count,
+            'total_neurons': total_neurons,
+            'pos_spike_rate': pos_spike_count / max(total_neurons, 1),
+            'neg_spike_rate': neg_spike_count / max(total_neurons, 1)
         }
 
     # ====================== [新增] FTBC 偏置初始化 =========================
-    def _init_time_based_bias(self, channels, device):
-        """懒初始化：首次 forward 时按通道数创建 T 个全零偏置向量"""
-        if self.time_based_bias is None:
-            self.time_based_bias = [torch.zeros(channels, device=device) for _ in range(self.T)]
+    def set_ftbc_mode(self, mode):
+        if mode not in {"none", "full", "state_low_rank"}:
+            raise ValueError(f"Unsupported FTBC mode: {mode}")
+        if self.ftbc_mode != mode:
+            self.reset_bias()
+        self.ftbc_mode = mode
+
+    def _init_ftbc_bias(self, channels, device):
+        if self.ftbc_mode == "full":
+            if self.time_based_bias is None:
+                self.time_based_bias = [
+                    torch.zeros(channels, device=device) for _ in range(self.T)
+                ]
+        elif self.ftbc_mode == "state_low_rank":
+            if self.bias_base is None:
+                self.bias_base = torch.zeros(channels, device=device)
+                self.bias_slope = torch.zeros(channels, device=device)
+                self.bias_state = torch.zeros(channels, device=device)
+
+    def _reshape_channel_bias(self, channel_bias, reference):
+        if reference.dim() == 4:
+            return channel_bias.view(1, -1, 1, 1)
+        if reference.dim() == 2:
+            return channel_bias.view(1, -1)
+        if reference.dim() == 1:
+            return channel_bias
+        raise ValueError(
+            f"Unsupported activation rank {reference.dim()} for FTBC bias"
+        )
+
+    def get_ftbc_bias(self, t, reference, transmitted=None):
+        if self.ftbc_mode == "none":
+            return torch.zeros_like(reference)
+        if self.ftbc_mode == "full":
+            return self._reshape_channel_bias(self.time_based_bias[t], reference)
+
+        tau = float(t) / max(self.T - 1, 1)
+        base = self._reshape_channel_bias(self.bias_base, reference)
+        slope = self._reshape_channel_bias(self.bias_slope, reference)
+        state_bias = self._reshape_channel_bias(self.bias_state, reference)
+        if transmitted is None:
+            state_term = torch.zeros_like(reference)
+        else:
+            state = transmitted if transmitted.dtype == torch.bool else transmitted > 0
+            state_term = torch.where(state, state_bias, state_bias.new_zeros(()))
+        state_term.add_(base + slope * tau)
+        return state_term
+
+    def ftbc_parameter_count(self):
+        if self.ftbc_mode == "full":
+            if self.time_based_bias is None:
+                return 0
+            return sum(item.numel() for item in self.time_based_bias)
+        if self.ftbc_mode == "state_low_rank":
+            tensors = (self.bias_base, self.bias_slope, self.bias_state)
+            return sum(item.numel() for item in tensors if item is not None)
+        return 0
+
+    def ftbc_storage_bytes(self):
+        if self.ftbc_mode == "full":
+            if self.time_based_bias is None:
+                return 0
+            return sum(
+                item.numel() * item.element_size() for item in self.time_based_bias
+            )
+        if self.ftbc_mode == "state_low_rank":
+            tensors = (self.bias_base, self.bias_slope, self.bias_state)
+            return sum(
+                item.numel() * item.element_size()
+                for item in tensors
+                if item is not None
+            )
+        return 0
     # =====================================================================
 
     def forward(self, x):
@@ -142,7 +225,7 @@ class SignedIF(nn.Module):
             x = x.view(self.T, batch_size, *x.shape[1:])
 
             # ============== [新增] FTBC: 懒初始化偏置 =========================
-            self._init_time_based_bias(x.shape[2], x.device)
+            self._init_ftbc_bias(x.shape[2], x.device)
             # ==============================================================
 
             spike_pot = []
@@ -154,16 +237,21 @@ class SignedIF(nn.Module):
                     self.mem = 0.5 * pos_thresh
                     self.transmitted = torch.zeros_like(x[t])
 
+                positive_state = None
+                if self.ftbc_mode == "state_low_rank" or self.enable_signed:
+                    positive_state = self.transmitted > 0
+
                 # ============== [新增] FTBC: 积分前减去时间步偏置 ==========
                 # 这是 FTBC 的核心接入点：每个时间步 t，
                 # 从膜电位中减去校准得到的通道级偏置 time_based_bias[t]，
                 # 让 SNN 的逐步输出更逼近 ANN 的激活值。
                 # 偏置初始为全零（不影响原行为），由 calibration.py 写入非零值。
-                bias = self.time_based_bias[t]
-                if len(x.shape) == 5:       # Conv 层: (T, B, C, H, W)
-                    bias = bias.view(1, -1, 1, 1)
-                elif len(x.shape) == 3:     # FC 层: (T, B, C)
-                    bias = bias.view(1, -1)
+                bias_state = (
+                    positive_state
+                    if self.ftbc_mode == "state_low_rank"
+                    else self.transmitted
+                )
+                bias = self.get_ftbc_bias(t, x[t], bias_state)
                 self.mem = self.mem - bias
                 # ===========================================================
 
@@ -175,16 +263,23 @@ class SignedIF(nn.Module):
                 # ============== [修改] SNM 开关：可关闭负脉冲 ==============
                 if self.enable_signed:
                     # Negative spike gated by memory (原 SNM 逻辑)
-                    neg_spike = (self.mem <= neg_thresh).float() * neg_thresh
-                    neg_spike = neg_spike * (self.transmitted > 0).float()
+                    neg_spike = torch.where(
+                        (self.mem <= neg_thresh) & positive_state,
+                        neg_thresh,
+                        neg_thresh.new_zeros(()),
+                    )
                 else:
                     # 关闭时退化为标准 QCFS 正脉冲
                     neg_spike = torch.zeros_like(pos_spike)
                 # ===========================================================
 
-                if not self.training:
-                    self.pos_spike_count += (pos_spike != 0).sum().item()
-                    self.neg_spike_count += (neg_spike != 0).sum().item()
+                if not self.training and self.collect_spike_stats:
+                    self.pos_spike_count = (
+                        self.pos_spike_count + torch.count_nonzero(pos_spike)
+                    )
+                    self.neg_spike_count = (
+                        self.neg_spike_count + torch.count_nonzero(neg_spike)
+                    )
                     self.total_neurons += x[t].numel()
 
                 spike = pos_spike + neg_spike

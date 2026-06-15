@@ -130,11 +130,11 @@ spike_sparsity_l = 1 - total_spike_rate_l
   - `collect_signed_spike_stats`
   - `estimate_conv2d_fanout`
   - `estimate_linear_fanout`
-- `main_test_signed.py`
+- `scripts/evaluate/main_test_signed.py`
   - 在 validation 前重置统计量
   - 在 validation 后打印每层统计结果
-- `run_stats_ablation.py`
-  - 运行四配置统计消融实验
+- `scripts/experiments/run_stats_ablation.py`
+  - 运行六配置统计消融实验
 
 ## 解释建议
 

@@ -289,6 +289,12 @@ class VGG_Signed(nn.Module):
             if isinstance(m, SignedIF):
                 m.enable_r0 = enabled
 
+    def set_ftbc_mode(self, mode):
+        """Set the FTBC representation used by every SignedIF layer."""
+        for m in self.modules():
+            if isinstance(m, SignedIF):
+                m.set_ftbc_mode(mode)
+
     def reset_all_bias(self):
         """清零所有 SignedIF 层的 FTBC 时间步偏置"""
         for m in self.modules():

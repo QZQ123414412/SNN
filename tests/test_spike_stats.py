@@ -1,10 +1,26 @@
 # 验证脉冲统计公式是否正确
 import unittest
 
-from spike_stats import SpikeLayerStats, estimate_conv2d_fanout, estimate_linear_fanout
+import torch.nn as nn
+
+from models.layer import SignedIF
+from spike_stats import (
+    SpikeLayerStats,
+    estimate_conv2d_fanout,
+    estimate_linear_fanout,
+    set_signed_spike_stats_enabled,
+)
 
 
 class SpikeStatsTest(unittest.TestCase):
+    def test_model_level_switch_updates_all_signed_neurons(self):
+        model = nn.Sequential(SignedIF(T=1), nn.Identity(), SignedIF(T=1))
+
+        set_signed_spike_stats_enabled(model, SignedIF, False)
+
+        self.assertFalse(model[0].collect_spike_stats)
+        self.assertFalse(model[2].collect_spike_stats)
+
     def test_layer_rates_and_sparsity_use_signed_spike_counts(self):
         stats = SpikeLayerStats(
             name="layer1.2",
