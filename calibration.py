@@ -11,6 +11,19 @@ import torch.nn as nn
 from models.layer import SignedIF
 
 
+def reshape_channel_bias(channel_bias, reference):
+    """Broadcast a channel-level FTBC bias to match an activation tensor."""
+    if reference.dim() == 4:
+        return channel_bias.view(1, -1, 1, 1)
+    if reference.dim() == 2:
+        return channel_bias.view(1, -1)
+    if reference.dim() == 1:
+        return channel_bias
+    raise ValueError(
+        f"Unsupported activation rank {reference.dim()} for channel-level FTBC bias"
+    )
+
+
 class ActivationSaverHook:
     """Forward-hook that captures first-call input & output for a module."""
     def __init__(self):
@@ -117,8 +130,10 @@ def bias_corr_step_by_step(ann, module_ann, snn, module_snn,
             curr_t_alpha * bias_mean + module_snn.time_based_bias[t]
         )
 
-        # replay with corrected dynamics
-        mem_corrected = mem - (curr_t_alpha * deviation)
+        # Replay with the same channel-level correction that is stored in
+        # time_based_bias and later used during deployment inference.
+        correction = reshape_channel_bias(curr_t_alpha * bias_mean, deviation)
+        mem_corrected = mem - correction
         spike_c_pos = (mem_corrected >= pos_thresh).float() * pos_thresh
         if enable_signed:
             spike_c_neg = (mem_corrected <= neg_thresh).float() * neg_thresh
