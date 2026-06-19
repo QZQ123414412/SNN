@@ -1,5 +1,6 @@
 import torch.nn as nn
 from models.layer import *
+from models.temporal_coding import make_time_scales
 
 cfg = {
     'VGG11': [
@@ -210,6 +211,12 @@ class VGG_Signed(nn.Module):
         self.merge = MergeTemporalDim(0)
         self.expand = ExpandTemporalDim(0)
         self.loss = 0
+        self.coding_mode = "rate"
+        self.refinement_schedule = "geometric"
+        self.refinement_ratio = 2.0
+        self.refinement_positive_margin = 0.5
+        self.refinement_negative_margin = 0.5
+        self.refinement_r0_mode = "credit_only"
         self.layer1 = self._make_layers(cfg[vgg_name][0], dropout)
         self.layer2 = self._make_layers(cfg[vgg_name][1], dropout)
         self.layer3 = self._make_layers(cfg[vgg_name][2], dropout)
@@ -266,6 +273,9 @@ class VGG_Signed(nn.Module):
                 module.T = T
             if isinstance(module, SignedIF):
                 module.init_mem()
+                module.time_scales = None
+                module._time_scale_cache_key = None
+                module.reset_stats()
         return
 
     def set_thresh(self, thresh):
@@ -295,6 +305,47 @@ class VGG_Signed(nn.Module):
             if isinstance(m, SignedIF):
                 m.set_ftbc_mode(mode)
 
+    def set_coding_mode(
+        self,
+        mode,
+        schedule="geometric",
+        ratio=2.0,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="credit_only",
+    ):
+        """Set one temporal coding rule for all SignedIF layers."""
+        self.coding_mode = mode
+        self.refinement_schedule = schedule
+        self.refinement_ratio = float(ratio)
+        self.refinement_positive_margin = float(positive_margin)
+        self.refinement_negative_margin = float(negative_margin)
+        self.refinement_r0_mode = r0_mode
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_coding_mode(
+                    mode,
+                    schedule=schedule,
+                    ratio=ratio,
+                    positive_margin=positive_margin,
+                    negative_margin=negative_margin,
+                    r0_mode=r0_mode,
+                )
+
+    def apply_temporal_readout(self, output):
+        """Apply refinement scales before the existing temporal mean."""
+        if self.coding_mode == "rate":
+            return output
+        scales = make_time_scales(
+            self.T,
+            mode=self.refinement_schedule,
+            ratio=self.refinement_ratio,
+            device=output.device,
+            dtype=output.dtype,
+        )
+        shape = [self.T] + [1] * (output.dim() - 1)
+        return output * scales.view(*shape)
+
     def reset_all_bias(self):
         """清零所有 SignedIF 层的 FTBC 时间步偏置"""
         for m in self.modules():
@@ -314,6 +365,7 @@ class VGG_Signed(nn.Module):
         out = self.classifier(out)
         if self.T > 0:
             out = self.expand(out)
+            out = self.apply_temporal_readout(out)
         return out
 
 

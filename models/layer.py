@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from .temporal_coding import make_time_scales
+
 class MergeTemporalDim(nn.Module):
     def __init__(self, T):
         super().__init__()
@@ -104,16 +106,150 @@ class SignedIF(nn.Module):
         self.bias_base = None
         self.bias_slope = None
         self.bias_state = None
+        self.coding_mode = "rate"
+        self.refinement_schedule = "geometric"
+        self.refinement_ratio = 2.0
+        self.refinement_positive_margin = 0.5
+        self.refinement_negative_margin = 0.5
+        self.refinement_r0_mode = "credit_only"
+        self.time_scales = None
+        self._time_scale_cache_key = None
         # ==================================================================
 
         self.pos_spike_count = 0
         self.neg_spike_count = 0
         self.total_neurons = 0
+        self.pos_spike_count_by_time = [0 for _ in range(max(int(T), 0))]
+        self.neg_spike_count_by_time = [0 for _ in range(max(int(T), 0))]
         self.collect_spike_stats = True
 
     def init_mem(self):
         self.mem = None
         self.transmitted = None
+
+    def set_coding_mode(
+        self,
+        mode,
+        schedule="geometric",
+        ratio=2.0,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="credit_only",
+    ):
+        if mode not in {"rate", "successive_refinement"}:
+            raise ValueError(f"Unsupported coding mode: {mode}")
+        if schedule not in {"rate", "geometric"}:
+            raise ValueError(f"Unsupported refinement schedule: {schedule}")
+        if float(ratio) < 1.0:
+            raise ValueError("refinement ratio must be greater than or equal to one")
+        if float(positive_margin) <= 0 or float(negative_margin) <= 0:
+            raise ValueError("refinement margins must be positive")
+        if r0_mode not in {"credit_only", "legacy_clamp"}:
+            raise ValueError(f"Unsupported refinement R0 mode: {r0_mode}")
+        self.coding_mode = mode
+        self.refinement_schedule = schedule
+        self.refinement_ratio = float(ratio)
+        self.refinement_positive_margin = float(positive_margin)
+        self.refinement_negative_margin = float(negative_margin)
+        self.refinement_r0_mode = r0_mode
+        self.time_scales = None
+        self._time_scale_cache_key = None
+        self.init_mem()
+
+    def get_time_scales(self, reference):
+        schedule = (
+            "rate"
+            if self.coding_mode == "rate"
+            else self.refinement_schedule
+        )
+        cache_key = (
+            int(self.T),
+            schedule,
+            float(self.refinement_ratio),
+            reference.device,
+            reference.dtype,
+        )
+        if self.time_scales is None or self._time_scale_cache_key != cache_key:
+            self.time_scales = make_time_scales(
+                self.T,
+                mode=schedule,
+                ratio=self.refinement_ratio,
+                device=reference.device,
+                dtype=reference.dtype,
+            )
+            self._time_scale_cache_key = cache_key
+        return self.time_scales
+
+    def get_time_scale(self, t, reference):
+        return self.get_time_scales(reference)[t]
+
+    def uses_successive_refinement(self):
+        return self.coding_mode == "successive_refinement" and int(self.T) > 1
+
+    def decode_transmitted(self, transmitted, t):
+        if not self.uses_successive_refinement():
+            return transmitted / float(t + 1)
+        scales = self.get_time_scales(transmitted)
+        return transmitted / scales[:t + 1].sum()
+
+    def _refinement_tolerance(self, reference):
+        return (
+            torch.finfo(reference.dtype).eps
+            * self.thresh.data.abs().clamp_min(1.0)
+            * 16
+        )
+
+    def refinement_step(self, input_t, t, mem, transmitted, bias=None):
+        """Advance one signed successive-refinement step."""
+        scale = self.get_time_scale(t, input_t)
+        quantum = scale * self.thresh.data
+        tolerance = self._refinement_tolerance(input_t)
+        if bias is None:
+            bias = torch.zeros_like(input_t)
+
+        mem = mem - scale * bias + scale * input_t
+        pos_mask = mem >= self.refinement_positive_margin * quantum
+        pos_spike = pos_mask.to(input_t.dtype) * self.thresh.data
+
+        if self.enable_signed:
+            neg_mask = (
+                (mem <= -self.refinement_negative_margin * quantum)
+                & (transmitted + tolerance >= quantum)
+            )
+            neg_spike = torch.where(
+                neg_mask,
+                self.neg_thresh.data,
+                self.neg_thresh.data.new_zeros(()),
+            )
+        else:
+            neg_mask = torch.zeros_like(pos_mask)
+            neg_spike = torch.zeros_like(pos_spike)
+
+        spike = pos_spike + neg_spike
+        signed_event = pos_mask.to(input_t.dtype) - neg_mask.to(input_t.dtype)
+        weighted_event = signed_event * quantum
+        mem = mem - weighted_event
+        transmitted = transmitted + weighted_event
+        transmitted = torch.where(
+            transmitted.abs() <= tolerance,
+            torch.zeros_like(transmitted),
+            transmitted,
+        )
+
+        if self.enable_r0:
+            no_credit = transmitted <= tolerance
+            transmitted = torch.where(
+                no_credit,
+                torch.zeros_like(transmitted),
+                transmitted,
+            )
+            if self.refinement_r0_mode == "legacy_clamp":
+                mem = torch.where(
+                    no_credit,
+                    torch.clamp(mem, min=0.0),
+                    mem,
+                )
+        return spike, mem, transmitted
 
     # ========================= [新增] FTBC 重置方法 =======================
     def reset_bias(self):
@@ -127,6 +263,8 @@ class SignedIF(nn.Module):
         self.pos_spike_count = 0
         self.neg_spike_count = 0
         self.total_neurons = 0
+        self.pos_spike_count_by_time = [0 for _ in range(max(int(self.T), 0))]
+        self.neg_spike_count_by_time = [0 for _ in range(max(int(self.T), 0))]
 
     def set_collect_spike_stats(self, enabled):
         self.collect_spike_stats = bool(enabled)
@@ -139,6 +277,12 @@ class SignedIF(nn.Module):
             'pos_spike_count': pos_spike_count,
             'neg_spike_count': neg_spike_count,
             'total_neurons': total_neurons,
+            'positive_spikes_by_time': tuple(
+                int(value) for value in self.pos_spike_count_by_time
+            ),
+            'negative_spikes_by_time': tuple(
+                int(value) for value in self.neg_spike_count_by_time
+            ),
             'pos_spike_rate': pos_spike_count / max(total_neurons, 1),
             'neg_spike_rate': neg_spike_count / max(total_neurons, 1)
         }
@@ -233,6 +377,40 @@ class SignedIF(nn.Module):
             neg_thresh = self.neg_thresh.data
 
             for t in range(self.T):
+                if self.uses_successive_refinement():
+                    if t == 0:
+                        self.mem = torch.zeros_like(x[t])
+                        self.transmitted = torch.zeros_like(x[t])
+
+                    bias = self.get_ftbc_bias(t, x[t], self.transmitted)
+                    spike, self.mem, self.transmitted = self.refinement_step(
+                        x[t],
+                        t,
+                        self.mem,
+                        self.transmitted,
+                        bias=bias,
+                    )
+
+                    if not self.training and self.collect_spike_stats:
+                        pos_count = torch.count_nonzero(spike > 0)
+                        neg_count = torch.count_nonzero(spike < 0)
+                        self.pos_spike_count = (
+                            self.pos_spike_count + pos_count
+                        )
+                        self.neg_spike_count = (
+                            self.neg_spike_count + neg_count
+                        )
+                        self.pos_spike_count_by_time[t] = (
+                            self.pos_spike_count_by_time[t] + pos_count
+                        )
+                        self.neg_spike_count_by_time[t] = (
+                            self.neg_spike_count_by_time[t] + neg_count
+                        )
+                        self.total_neurons += x[t].numel()
+
+                    spike_pot.append(spike)
+                    continue
+
                 if t == 0:
                     self.mem = 0.5 * pos_thresh
                     self.transmitted = torch.zeros_like(x[t])
@@ -274,11 +452,19 @@ class SignedIF(nn.Module):
                 # ===========================================================
 
                 if not self.training and self.collect_spike_stats:
+                    pos_count = torch.count_nonzero(pos_spike)
+                    neg_count = torch.count_nonzero(neg_spike)
                     self.pos_spike_count = (
-                        self.pos_spike_count + torch.count_nonzero(pos_spike)
+                        self.pos_spike_count + pos_count
                     )
                     self.neg_spike_count = (
-                        self.neg_spike_count + torch.count_nonzero(neg_spike)
+                        self.neg_spike_count + neg_count
+                    )
+                    self.pos_spike_count_by_time[t] = (
+                        self.pos_spike_count_by_time[t] + pos_count
+                    )
+                    self.neg_spike_count_by_time[t] = (
+                        self.neg_spike_count_by_time[t] + neg_count
                     )
                     self.total_neurons += x[t].numel()
 

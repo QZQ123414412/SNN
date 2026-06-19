@@ -142,6 +142,51 @@ def bias_corr_step_by_step(ann, module_ann, snn, module_snn,
     enable_signed = module_snn.enable_signed
     enable_r0 = module_snn.enable_r0
 
+    if module_snn.uses_successive_refinement():
+        mem = torch.zeros_like(snn_in[0])
+        transmitted = torch.zeros_like(snn_in[0])
+        for t in range(T):
+            mem_before = mem
+            transmitted_before = transmitted
+            bias_existing = module_snn.get_ftbc_bias(
+                t,
+                snn_in[t],
+                transmitted_before,
+            )
+            _, _, transmitted_uncorrected = module_snn.refinement_step(
+                snn_in[t],
+                t,
+                mem_before,
+                transmitted_before,
+                bias=bias_existing,
+            )
+            deviation = (
+                module_snn.decode_transmitted(transmitted_uncorrected, t)
+                - ann_out
+            )
+            if deviation.dim() == 4:
+                bias_mean = deviation.mean(dim=[0, 2, 3])
+            elif deviation.dim() == 2:
+                bias_mean = deviation.mean(dim=0)
+            else:
+                bias_mean = deviation.mean(dim=0)
+
+            module_snn.time_based_bias[t] = (
+                curr_t_alpha * bias_mean + module_snn.time_based_bias[t]
+            )
+            correction = reshape_channel_bias(
+                curr_t_alpha * bias_mean,
+                deviation,
+            )
+            _, mem, transmitted = module_snn.refinement_step(
+                snn_in[t],
+                t,
+                mem_before,
+                transmitted_before,
+                bias=bias_existing + correction,
+            )
+        return
+
     mem = 0.5 * pos_thresh
     transmitted = torch.zeros_like(snn_in[0])
     cumul_spike_sum = torch.zeros_like(snn_in[0])
@@ -229,6 +274,51 @@ def state_low_rank_corr_step_by_step(
     neg_thresh = module_snn.neg_thresh.data
     enable_signed = module_snn.enable_signed
     enable_r0 = module_snn.enable_r0
+
+    if module_snn.uses_successive_refinement():
+        mem = torch.zeros_like(snn_in[0])
+        transmitted = torch.zeros_like(snn_in[0])
+        channels = snn_in.shape[2]
+        xtx = torch.zeros(channels, 3, 3, device=snn_in.device)
+        xty = torch.zeros(channels, 3, device=snn_in.device)
+
+        for t in range(T):
+            state_before_spike = (
+                transmitted > module_snn._refinement_tolerance(transmitted)
+            ).to(snn_in.dtype)
+            bias = module_snn.get_ftbc_bias(t, snn_in[t], transmitted)
+            _, mem, transmitted = module_snn.refinement_step(
+                snn_in[t],
+                t,
+                mem,
+                transmitted,
+                bias=bias,
+            )
+            deviation = (
+                module_snn.decode_transmitted(transmitted, t) - ann_out
+            )
+            weight = torch.where(
+                deviation > 0,
+                torch.full_like(deviation, float(over_weight)),
+                torch.full_like(deviation, float(under_weight)),
+            )
+            step_xtx, step_xty = accumulate_state_low_rank_statistics(
+                target=deviation,
+                state=state_before_spike,
+                tau=float(t) / max(T - 1, 1),
+                weight=weight,
+            )
+            xtx = xtx + step_xtx
+            xty = xty + step_xty
+
+        delta = solve_state_low_rank_coefficients(xtx, xty, ridge=ridge)
+        if coefficient_clip > 0:
+            limit = float(coefficient_clip) * float(pos_thresh.abs().item())
+            delta = delta.clamp(min=-limit, max=limit)
+        module_snn.bias_base.add_(curr_t_alpha * delta[:, 0])
+        module_snn.bias_slope.add_(curr_t_alpha * delta[:, 1])
+        module_snn.bias_state.add_(curr_t_alpha * delta[:, 2])
+        return
 
     mem = 0.5 * pos_thresh
     transmitted = torch.zeros_like(snn_in[0])

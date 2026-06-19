@@ -1,9 +1,11 @@
 # 验证脉冲统计公式是否正确
 import unittest
 
+import torch
 import torch.nn as nn
 
 from models.layer import SignedIF
+from scripts.experiments.run_stats_ablation import summarize_layer_stats
 from spike_stats import (
     SpikeLayerStats,
     estimate_conv2d_fanout,
@@ -48,6 +50,71 @@ class SpikeStatsTest(unittest.TestCase):
 
     def test_linear_fanout_uses_output_features(self):
         self.assertEqual(estimate_linear_fanout(in_features=512, out_features=4096), 4096)
+
+    def test_rate_coding_has_no_time_scale_operations(self):
+        stats = SpikeLayerStats(
+            name="layer1.2",
+            kind="Conv2d",
+            time_steps=2,
+            output_neurons_per_step=10,
+            positive_spikes=4,
+            negative_spikes=0,
+            input_positive_spikes=5,
+            input_negative_spikes=0,
+            synaptic_ops_per_input_spike=10,
+            input_spikes_by_time=(2, 3),
+            time_scales=(1.0, 1.0),
+        )
+
+        self.assertEqual(stats.scale_operations, 0)
+
+    def test_refinement_counts_scaled_input_driven_synaptic_operations(self):
+        stats = SpikeLayerStats(
+            name="layer1.2",
+            kind="Conv2d",
+            time_steps=2,
+            output_neurons_per_step=10,
+            positive_spikes=4,
+            negative_spikes=0,
+            input_positive_spikes=5,
+            input_negative_spikes=0,
+            synaptic_ops_per_input_spike=10,
+            input_spikes_by_time=(2, 3),
+            time_scales=(4 / 3, 2 / 3),
+        )
+
+        self.assertEqual(stats.scale_operations, 50)
+
+    def test_signed_neuron_reports_per_time_step_event_counts(self):
+        neuron = SignedIF(T=2, thresh=1.0)
+        neuron.set_ftbc_mode("none")
+        neuron.eval()
+
+        neuron(torch.tensor([[0.25], [0.25]]))
+        stats = neuron.get_stats()
+
+        self.assertEqual(stats["positive_spikes_by_time"], (0, 1))
+        self.assertEqual(stats["negative_spikes_by_time"], (0, 0))
+
+    def test_summary_reports_scale_operations_separately_from_sops(self):
+        stats = SpikeLayerStats(
+            name="layer1.2",
+            kind="Conv2d",
+            time_steps=2,
+            output_neurons_per_step=10,
+            positive_spikes=4,
+            negative_spikes=0,
+            input_positive_spikes=5,
+            input_negative_spikes=0,
+            synaptic_ops_per_input_spike=10,
+            input_spikes_by_time=(2, 3),
+            time_scales=(4 / 3, 2 / 3),
+        )
+
+        summary = summarize_layer_stats([stats])
+
+        self.assertEqual(summary["sops"], 50)
+        self.assertEqual(summary["scale_operations"], 50)
 
 
 if __name__ == "__main__":

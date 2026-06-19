@@ -169,6 +169,11 @@ def write_report(path, args, selected_configs, results, layer_results):
         metrics = [
             ("Accuracy", "acc", lambda value: f"{value:.2f}%"),
             ("Input-driven SOPs", "sops", lambda value: f"{value:,}"),
+            (
+                "Time-scale operations",
+                "scale_operations",
+                lambda value: f"{value:,}",
+            ),
             ("Positive spike rate", "positive_rate", format_pct),
             ("Negative spike rate", "negative_rate", format_pct),
             ("Overall spike sparsity", "sparsity", format_pct),
@@ -215,14 +220,18 @@ def write_report(path, args, selected_configs, results, layer_results):
                 if T not in layer_results[name]:
                     continue
                 report.write(f"### {name}, T={T}\n\n")
-                report.write("| Layer | PosRate | NegRate | Sparsity | InputSpikes | SOPs |\n")
-                report.write("|---|---:|---:|---:|---:|---:|\n")
+                report.write(
+                    "| Layer | PosRate | NegRate | Sparsity | "
+                    "InputSpikes | SOPs | ScaleOps |\n"
+                )
+                report.write("|---|---:|---:|---:|---:|---:|---:|\n")
                 for item in layer_results[name][T]:
                     report.write(
                         f"| {item.name} | {format_pct(item.positive_spike_rate)} | "
                         f"{format_pct(item.negative_spike_rate)} | "
                         f"{format_pct(item.spike_sparsity)} | "
-                        f"{item.total_input_spikes:,} | {item.sops:,} |\n"
+                        f"{item.total_input_spikes:,} | {item.sops:,} | "
+                        f"{item.scale_operations:,} |\n"
                     )
                 report.write("\n")
 

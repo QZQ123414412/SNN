@@ -4,7 +4,7 @@
 
 在现有 `QCFS + SNM + R0 + FTBC` 框架上，形成两个相互配合、但可以独立验证的创新方向：
 
-1. **单调有符号逐次精化编码**：将传统“各时间步等权重复发放”的 rate coding 改为“前期粗估计、后期细修正”的有符号编码，使每个脉冲承担一次有效的表示校正。
+1. **信用约束有符号残差精化**：保留膜电位残差，以净正累计输出作为负修正信用，并使用非对称 hysteresis 抑制无效的正负脉冲振荡。
 2. **状态条件低秩 FTBC**：让 SNM、R0 和 FTBC 围绕同一个累计传输状态协同工作，并将 FTBC bias 从 `T×C` 压缩为 `3×C`。
 
 最终方法不使用逐层配置搜索，不使用 early-exit，也不依赖高时间步才能生效。所有方法均在相同固定时间步：
@@ -157,134 +157,87 @@ temporary calibration accumulators
 
 ---
 
-## 4. 方向一：单调有符号逐次精化编码
+## 4. 方向一：信用约束有符号残差精化
 
 ## 4.1 核心思想
 
-现有 QCFS-SNN 使用等权 rate coding。对于固定时间步 `T`，每个脉冲对最终输出的贡献相同：
+现有 SignedIF 已允许负脉冲撤销过发放，但原 R0 在净累计输出为零时会直接清除负膜电位。该规则适合避免“负债”，却也会删除可供后续时间步使用的有效残差。
+
+方向一把“是否允许负输出”和“是否保留负残差”分开：
 
 ```text
-R_T = theta / T * sum(s_t)
-s_t ∈ {0, 1}
+transmitted：已经对外发送的净正表示，即负修正信用
+mem：尚未被脉冲表达的残差
 ```
 
-因此，`T` 个时间步只能直接形成 `T+1` 个非负发放等级。低时间步下，每个脉冲的量化步长较大；早期一旦过发放，后续只能依赖有限次数的负脉冲撤销。
-
-方向一将脉冲从“重复投票”改为“逐次修正当前表示”：
+规则为：
 
 ```text
-R_t = R_(t-1) + w_t * s_t
-s_t ∈ {-1, 0, +1}
+没有足够transmitted时：禁止负脉冲
+没有足够transmitted时：仍保留mem中的负残差
 ```
 
-其中：
+因此，后续输入可以抵消或利用该残差，而不会产生非法负输出。方向一不需要采集转换残差、不需要回到 ANN 注入噪声，也不需要微调原始 checkpoint。
+
+## 4.2 非对称 hysteresis
+
+正负修正使用不同决策边界：
 
 ```text
-w_t >= 0
-w_t >= w_(t+1)
-sum_t(w_t) = theta
+正脉冲：mem >= 0.55 * theta
+负脉冲：mem <= -1.30 * theta 且 transmitted >= theta
 ```
 
-`w_t` 随时间单调减小，使前期脉冲负责粗粒度表示，后期正负脉冲负责细粒度修正。这相当于在固定时间步内进行 signed successive refinement，而不是反复使用相同量化步长估计发放率。
-
-该方向直接改变 SNN 的编码原则，不需要先统计转换残差、再回到 ANN 注入噪声，也不要求重新微调原始 QCFS checkpoint。
-
-## 4.2 时间权重设计
-
-第一版只比较三种可解释形式，不进行昂贵逐层搜索。
-
-### 等权基线
-
-```text
-w_t = theta / T
-```
-
-它等价于当前 rate coding，用于验证代码兼容性。
-
-### 固定二进制式权重
-
-```text
-w_t = theta * 2^(T-t) / (2^T - 1)
-```
-
-该权重天然满足非负、单调和归一化约束，且可使用移位或预融合实现，适合作为最简主方法。
-
-### 全局单调校准权重
-
-只校准一组由所有层共享的时间系数，不为每层单独搜索配置：
-
-```text
-w_t = theta * softmax(cumulative_positive_delta)_t
-```
-
-参数化必须保证：
-
-```text
-w_t >= 0
-w_t >= w_(t+1)
-sum_t(w_t) = theta
-```
-
-校准目标同时考虑准确率代理误差和事件数量，但第一版必须先验证固定二进制式权重，不能直接引入可学习参数掩盖编码机制本身。
+较大的负阈值形成 hysteresis，避免正脉冲刚发出后立即被小幅负残差撤销，从而减少正负脉冲振荡和双重 SOPs 开销。所有层共享同一组 margin，不进行逐层配置搜索。
 
 ## 4.3 神经元更新
 
-概念上，膜电位保存尚未表达的输入信息，`w_t` 决定当前时间步允许的校正尺度：
-
 ```text
-1. 读取当前时间尺度 w_t
-2. 应用 FTBC 状态校正
-3. 累积当前输入
-4. 若 mem 超过正决策边界，产生 +w_t 校正
-5. 若 transmitted > 0 且 mem 低于负决策边界，产生 -w_t 校正
-6. 更新 mem 和 transmitted
-7. 若 transmitted == 0，则执行 R0
+1. mem = mem - FTBC_bias(t, transmitted)
+2. mem = mem + input(t)
+3. 若mem >= 0.55*theta，则发+theta
+4. 若mem <= -1.30*theta且transmitted >= theta，则发-theta
+5. mem = mem - spike
+6. transmitted = transmitted + spike
+7. transmitted接近0时置0，但不清空mem残差
 ```
 
-这里的 `transmitted` 表示当前净正累计表示，而不再只是等权脉冲计数。SNM 的负脉冲成为正式的向下精化操作，R0 保证不存在可撤销正表示时不会产生无意义负修正。
-
-实际实现应优先在阈值域表达时间尺度，或者将二进制尺度预融合到突触权重中，避免在每个事件上执行通用浮点乘法。若 PyTorch 原型直接使用带权事件，必须额外报告尺度乘法开销，不能将其全部计为普通 AC。
+`T=1` 时不存在后续修正过程，因此自动回退原 rate coding，保证单时间步基线不退化。
 
 ## 4.4 与 QCFS 的对应关系
 
-QCFS 继续提供 ANN 端稳定的量化目标，方向一只改变该目标在 SNN 时间维上的展开方式：
-
 ```text
 QCFS：目标激活属于哪个量化等级
-逐次精化：固定T内如何从粗到细逼近该等级
-SNM：允许向下撤销过量表示
-R0：约束负校正的合法状态
-FTBC：微调正、零、负校正的时间决策边界
+残差记忆：保留尚未表达的正负信息
+SNM：在信用充足时撤销过量表示
+credit-only R0：禁止非法负输出，但不删除有效残差
+hysteresis：减少正负脉冲来回振荡
+FTBC：校正剩余通道和时间偏差
 ```
 
-因此不需要残差采集、噪声注入或额外 ANN 微调。原始 checkpoint、网络拓扑和固定时间步实验协议保持不变。
+原始 checkpoint、网络拓扑和固定时间步协议保持不变。
 
 ## 4.5 代码改造
 
-- 修改 `models/layer.py::SignedIF`：增加 `coding_mode=rate|successive_refinement` 和时间尺度序列。
-- 增加统一的时间权重生成器：支持等权、固定二进制式和全局单调校准三种模式。
-- 修改累计输出、soft reset、负脉冲和 R0 判断，使其基于带权净累计表示。
-- 修改 `spike_stats.py`：分别统计事件 SOPs、正负事件数，以及时间尺度操作开销。
-- 修改状态条件 FTBC 校准：在逐次精化动力学下重新拟合 bias。
-- 增加单元测试：验证权重非负、单调、归一化，正负校正守恒，rate 模式结果不变。
+- `models/layer.py::SignedIF`：增加 CSRR 状态机、margin、credit-only R0 和 T=1 回退。
+- `models/VGG.py`：增加全模型编码配置接口。
+- `calibration.py`：让完整 FTBC 与状态低秩 FTBC 复用同一 CSRR 单步状态转移。
+- `spike_stats.py`：增加逐时间步事件计数和独立 ScaleOps 统计。
+- `scripts/experiments/run_successive_refinement_ablation.py`：实现方向一、方向二及组合消融。
+- `preprocess/getdataloader.py`：增加跨平台数据目录和 worker 配置。
+- `tests/test_successive_refinement.py`：验证状态守恒、R0、hysteresis、FTBC 重放和配置展开。
 
-## 4.6 预期收益与风险
+## 4.6 时间权重消融
 
-预期收益：
+实现中保留了全局几何时间尺度：
 
-- 提高单个脉冲携带的信息量，重点改善 `T=1/2/4/8`；
-- 用更少的非零事件表达相同激活，降低 SOPs、提高 spike sparsity；
-- 减少重复过发放及后续撤销，使 FTBC 只承担小幅决策边界校正；
-- 不改变网络拓扑，不进行逐层配置搜索，也不依赖 early-exit。
+```text
+w_t proportional to ratio^(-t)
+```
 
-主要风险：
+实验表明 `ratio>1` 虽可提高部分低时间步准确率，但会显著增加负脉冲、SOPs 和尺度操作。因此最终取 `ratio=1.0`，即所有时间尺度恒为 1，ScaleOps 为零。几何时间权重仅作为失败消融保留。
 
-- 早期较大权重可能放大不稳定输入造成的错误；
-- 带权事件在部分硬件上不是免费的普通 AC；
-- 深层网络中时间尺度传播可能改变现有 ANN-SNN 等价关系；
-- 高时间步性能可能因早期权重过大而退化。
-
-因此先在 `T=2/4` 上做可行性筛选。只有准确率与 SOPs 至少一项改善、另一项不明显恶化，才扩展到 `T=1/8/16/32`。
+最终方法在 CIFAR-10/100 上均取得 Accuracy-SOPs-sparsity 改善，完整结果见 `docs/results/successive_refinement/SR_FINAL_ANALYSIS.md`。
 
 ---
 
@@ -647,7 +600,7 @@ T=16/32准确率不出现明显退化；
 1. **Signed-state-conditioned temporal correction**
    利用 SignedIF 的净累计传输状态统一控制 SNM、R0 和 FTBC，使时序校正显式适应正脉冲撤销状态与 R0 保护状态。
 
-2. **Monotonic signed successive-refinement coding**
-   将等权发放率估计改为单调递减时间尺度下的有符号逐次精化，使早期脉冲进行粗粒度表示、后期正负脉冲修正剩余误差，并由 R0 保证负校正状态合法。
+2. **Credit-aware signed residual refinement**
+   保留对后续修正有用的膜电位残差，以净正累计输出作为负修正信用，并使用非对称 hysteresis 抑制正负脉冲振荡；该机制与状态条件低秩 FTBC 共享同一累计输出状态。
 
 低秩 bias 压缩、SOPs 和能耗评价是第一点的重要组成部分，但不应被单独夸大为第三个完全独立的算法贡献。

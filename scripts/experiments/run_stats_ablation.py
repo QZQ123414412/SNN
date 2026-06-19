@@ -78,6 +78,7 @@ def summarize_layer_stats(layer_stats):
     total_neg = sum(item.negative_spikes for item in layer_stats)
     total_obs = sum(item.total_observations for item in layer_stats)
     total_sops = sum(item.sops for item in layer_stats)
+    total_scale_operations = sum(item.scale_operations for item in layer_stats)
     total_spikes = total_pos + total_neg
     return {
         "positive_spikes": total_pos,
@@ -87,6 +88,7 @@ def summarize_layer_stats(layer_stats):
         "total_rate": total_spikes / max(total_obs, 1),
         "sparsity": 1.0 - total_spikes / max(total_obs, 1),
         "sops": total_sops,
+        "scale_operations": total_scale_operations,
     }
 
 
@@ -140,6 +142,7 @@ def write_markdown_report(path, args, results, layer_results):
         metric_specs = [
             ("Accuracy", "acc", lambda v: f"{v:.2f}%"),
             ("Input-driven SOPs", "sops", lambda v: f"{v:,}"),
+            ("Time-scale operations", "scale_operations", lambda v: f"{v:,}"),
             ("Positive spike rate", "positive_rate", format_pct),
             ("Negative spike rate", "negative_rate", format_pct),
             ("Overall spike sparsity", "sparsity", format_pct),
@@ -164,13 +167,17 @@ def write_markdown_report(path, args, results, layer_results):
                 if T not in layer_results[cfg_name]:
                     continue
                 f.write(f"### {cfg_name}, T={T}\n\n")
-                f.write("| Layer | PosRate | NegRate | Sparsity | InputSpikes | SOPs |\n")
-                f.write("|---|---:|---:|---:|---:|---:|\n")
+                f.write(
+                    "| Layer | PosRate | NegRate | Sparsity | "
+                    "InputSpikes | SOPs | ScaleOps |\n"
+                )
+                f.write("|---|---:|---:|---:|---:|---:|---:|\n")
                 for item in layer_results[cfg_name][T]:
                     f.write(
                         f"| {item.name} | {format_pct(item.positive_spike_rate)} | "
                         f"{format_pct(item.negative_spike_rate)} | {format_pct(item.spike_sparsity)} | "
-                        f"{item.total_input_spikes:,} | {item.sops:,} |\n"
+                        f"{item.total_input_spikes:,} | {item.sops:,} | "
+                        f"{item.scale_operations:,} |\n"
                     )
                 f.write("\n")
 
