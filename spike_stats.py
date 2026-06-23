@@ -30,6 +30,9 @@ class SpikeLayerStats:
     input_positive_spikes: int = 0
     input_negative_spikes: int = 0
     synaptic_ops_per_input_spike: int = 0
+    positive_spikes_by_time: tuple = ()
+    negative_spikes_by_time: tuple = ()
+    scale_operations: int = 0
 
     @property
     def total_observations(self):
@@ -127,6 +130,7 @@ def collect_signed_spike_stats(model, signed_if_type, conv2d_type, linear_type):
             output_neurons_per_step = max(total_neurons // time_steps, 1)
             pos_spikes = int(getattr(module, "pos_spike_count", 0))
             neg_spikes = int(getattr(module, "neg_spike_count", 0))
+            module_stats = module.get_stats()
             stats.append(
                 SpikeLayerStats(
                     name=name,
@@ -138,6 +142,13 @@ def collect_signed_spike_stats(model, signed_if_type, conv2d_type, linear_type):
                     input_positive_spikes=input_pos,
                     input_negative_spikes=input_neg,
                     synaptic_ops_per_input_spike=ops_per_input_spike,
+                    positive_spikes_by_time=tuple(
+                        module_stats["positive_spikes_by_time"]
+                    ),
+                    negative_spikes_by_time=tuple(
+                        module_stats["negative_spikes_by_time"]
+                    ),
+                    scale_operations=module_stats["scale_operations"],
                 )
             )
             previous_spike_source = (pos_spikes, neg_spikes)
@@ -151,6 +162,7 @@ def format_spike_stats_report(layer_stats):
     total_neg = sum(item.negative_spikes for item in layer_stats)
     total_obs = sum(item.total_observations for item in layer_stats)
     total_sops = sum(item.sops for item in layer_stats)
+    total_scale_ops = sum(item.scale_operations for item in layer_stats)
 
     lines = []
     lines.append("\nSpike/SOPs statistics")
@@ -177,5 +189,6 @@ def format_spike_stats_report(layer_stats):
     lines.append(f"Total spike rate: {total_rate:.4%}")
     lines.append(f"Overall spike sparsity: {1.0 - total_rate:.4%}")
     lines.append(f"Total SOPs (input-driven): {total_sops:,}")
+    lines.append(f"Total ScaleOps (weighted events): {total_scale_ops:,}")
     lines.append("=" * 120)
     return "\n".join(lines)

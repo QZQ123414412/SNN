@@ -1,11 +1,13 @@
 # 验证脉冲统计公式是否正确
 import unittest
 
+import torch
 import torch.nn as nn
 
 from models.layer import SignedIF
 from spike_stats import (
     SpikeLayerStats,
+    collect_signed_spike_stats,
     estimate_conv2d_fanout,
     estimate_linear_fanout,
     set_signed_spike_stats_enabled,
@@ -48,6 +50,42 @@ class SpikeStatsTest(unittest.TestCase):
 
     def test_linear_fanout_uses_output_features(self):
         self.assertEqual(estimate_linear_fanout(in_features=512, out_features=4096), 4096)
+
+    def test_refinement_records_per_time_events_and_scale_operations(self):
+        neuron = SignedIF(T=4, thresh=1.0, enable_signed=True, enable_r0=True)
+        neuron.set_ftbc_mode("none")
+        neuron.is_input_layer = True
+        neuron.set_coding_mode("monotonic_refinement", schedule="binary")
+        neuron.eval()
+
+        neuron(torch.full((4, 1), 0.4))
+        stats = neuron.get_stats()
+
+        self.assertEqual(sum(stats["positive_spikes_by_time"]), stats["pos_spike_count"])
+        self.assertEqual(sum(stats["negative_spikes_by_time"]), stats["neg_spike_count"])
+        self.assertEqual(
+            stats["scale_operations"],
+            stats["pos_spike_count"] + stats["neg_spike_count"],
+        )
+
+    def test_collected_layer_stats_keep_scale_ops_separate_from_sops(self):
+        model = nn.Sequential(
+            nn.Linear(1, 1, bias=False),
+            SignedIF(T=2, thresh=1.0, enable_signed=True, enable_r0=True),
+        )
+        model[0].weight.data.fill_(1.0)
+        neuron = model[1]
+        neuron.set_ftbc_mode("none")
+        neuron.set_coding_mode("monotonic_refinement", schedule="binary")
+        neuron.eval()
+        model.eval()
+        model(torch.tensor([[1.0], [0.0]]))
+
+        stats = collect_signed_spike_stats(model, SignedIF, nn.Conv2d, nn.Linear)[0]
+
+        self.assertGreater(stats.scale_operations, 0)
+        self.assertEqual(stats.sops, 0)
+        self.assertEqual(sum(stats.positive_spikes_by_time), stats.positive_spikes)
 
 
 if __name__ == "__main__":

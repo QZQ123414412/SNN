@@ -136,17 +136,63 @@ def bias_corr_step_by_step(ann, module_ann, snn, module_snn,
     snn_getter = GetLayerInputOutput(snn, module_snn)
     snn_in = snn_getter(train_data.clone())[0]
     snn_in = snn_in.view(T, -1, *snn_in.shape[1:])
+    if module_snn.uses_monotonic_refinement:
+        snn_in = module_snn.prepare_temporal_input(snn_in)
 
     pos_thresh = module_snn.thresh.data
     neg_thresh = module_snn.neg_thresh.data
     enable_signed = module_snn.enable_signed
     enable_r0 = module_snn.enable_r0
 
-    mem = 0.5 * pos_thresh
+    mem = (
+        torch.zeros_like(snn_in[0])
+        if module_snn.uses_monotonic_refinement
+        else 0.5 * pos_thresh
+    )
     transmitted = torch.zeros_like(snn_in[0])
     cumul_spike_sum = torch.zeros_like(snn_in[0])
 
     for t in range(T):
+        if module_snn.uses_monotonic_refinement:
+            mem_before = mem
+            transmitted_before = transmitted
+            bias_existing = module_snn.get_ftbc_bias(
+                t,
+                snn_in[t],
+                transmitted_before,
+            )
+            _, _, uncorrected_transmitted = module_snn.refinement_step(
+                input_t=snn_in[t],
+                t=t,
+                mem=mem_before,
+                transmitted=transmitted_before,
+                bias=bias_existing,
+            )
+            deviation = uncorrected_transmitted / T - ann_out
+            if deviation.dim() == 4:
+                bias_mean = deviation.mean(dim=[0, 2, 3])
+            elif deviation.dim() == 2:
+                bias_mean = deviation.mean(dim=0)
+            else:
+                bias_mean = deviation.mean(dim=0)
+
+            module_snn.time_based_bias[t] = (
+                curr_t_alpha * bias_mean + module_snn.time_based_bias[t]
+            )
+            corrected_bias = module_snn.get_ftbc_bias(
+                t,
+                snn_in[t],
+                transmitted_before,
+            )
+            _, mem, transmitted = module_snn.refinement_step(
+                input_t=snn_in[t],
+                t=t,
+                mem=mem_before,
+                transmitted=transmitted_before,
+                bias=corrected_bias,
+            )
+            continue
+
         bias_existing = module_snn.time_based_bias[t]
         if len(snn_in.shape) == 5:
             bias_existing = bias_existing.view(1, -1, 1, 1)
@@ -224,13 +270,19 @@ def state_low_rank_corr_step_by_step(
     snn_getter = GetLayerInputOutput(snn, module_snn)
     snn_in = snn_getter(train_data.clone())[0]
     snn_in = snn_in.view(T, -1, *snn_in.shape[1:])
+    if module_snn.uses_monotonic_refinement:
+        snn_in = module_snn.prepare_temporal_input(snn_in)
 
     pos_thresh = module_snn.thresh.data
     neg_thresh = module_snn.neg_thresh.data
     enable_signed = module_snn.enable_signed
     enable_r0 = module_snn.enable_r0
 
-    mem = 0.5 * pos_thresh
+    mem = (
+        torch.zeros_like(snn_in[0])
+        if module_snn.uses_monotonic_refinement
+        else 0.5 * pos_thresh
+    )
     transmitted = torch.zeros_like(snn_in[0])
     cumulative_spike_sum = torch.zeros_like(snn_in[0])
     channels = snn_in.shape[2]
@@ -240,21 +292,30 @@ def state_low_rank_corr_step_by_step(
     for t in range(T):
         state_before_spike = (transmitted > 0).to(snn_in.dtype)
         bias = module_snn.get_ftbc_bias(t, snn_in[t], transmitted)
-        mem = mem - bias + snn_in[t]
-
-        pos_spike = (mem >= pos_thresh).float() * pos_thresh
-        if enable_signed:
-            neg_spike = (mem <= neg_thresh).float() * neg_thresh
-            neg_spike = neg_spike * state_before_spike
+        if module_snn.uses_monotonic_refinement:
+            spike, mem, transmitted = module_snn.refinement_step(
+                input_t=snn_in[t],
+                t=t,
+                mem=mem,
+                transmitted=transmitted,
+                bias=bias,
+            )
+            deviation = transmitted / T - ann_out
         else:
-            neg_spike = torch.zeros_like(pos_spike)
-        spike = pos_spike + neg_spike
-        cumulative_spike_sum = cumulative_spike_sum + spike
+            mem = mem - bias + snn_in[t]
+            pos_spike = (mem >= pos_thresh).float() * pos_thresh
+            if enable_signed:
+                neg_spike = (mem <= neg_thresh).float() * neg_thresh
+                neg_spike = neg_spike * state_before_spike
+            else:
+                neg_spike = torch.zeros_like(pos_spike)
+            spike = pos_spike + neg_spike
+            cumulative_spike_sum = cumulative_spike_sum + spike
 
-        if enable_signed:
-            deviation = cumulative_spike_sum / (t + 1) - ann_out
-        else:
-            deviation = spike - ann_out
+            if enable_signed:
+                deviation = cumulative_spike_sum / (t + 1) - ann_out
+            else:
+                deviation = spike - ann_out
 
         weight = torch.where(
             deviation > 0,
@@ -270,14 +331,15 @@ def state_low_rank_corr_step_by_step(
         xtx = xtx + step_xtx
         xty = xty + step_xty
 
-        mem = mem - spike
-        transmitted = transmitted + spike
-        if enable_r0:
-            mem = torch.where(
-                transmitted == 0,
-                torch.clamp(mem, min=0.0),
-                mem,
-            )
+        if not module_snn.uses_monotonic_refinement:
+            mem = mem - spike
+            transmitted = transmitted + spike
+            if enable_r0:
+                mem = torch.where(
+                    transmitted == 0,
+                    torch.clamp(mem, min=0.0),
+                    mem,
+                )
 
     delta = solve_state_low_rank_coefficients(xtx, xty, ridge=ridge)
     if coefficient_clip > 0:

@@ -1,5 +1,6 @@
 import torch.nn as nn
 from models.layer import *
+from models.temporal_coding import make_time_weights
 
 cfg = {
     'VGG11': [
@@ -210,6 +211,10 @@ class VGG_Signed(nn.Module):
         self.merge = MergeTemporalDim(0)
         self.expand = ExpandTemporalDim(0)
         self.loss = 0
+        self.readout_mode = "event_mean"
+        self.readout_schedule = "uniform"
+        self.readout_ratio = 2.0
+        self.readout_custom_weights = None
         self.layer1 = self._make_layers(cfg[vgg_name][0], dropout)
         self.layer2 = self._make_layers(cfg[vgg_name][1], dropout)
         self.layer3 = self._make_layers(cfg[vgg_name][2], dropout)
@@ -245,6 +250,7 @@ class VGG_Signed(nn.Module):
                 nn.init.zeros_(m.bias)
             elif isinstance(m, nn.Linear):
                 nn.init.zeros_(m.bias)
+        self._mark_first_signed_layer()
 
     def _make_layers(self, cfg, dropout):
         layers = []
@@ -266,6 +272,8 @@ class VGG_Signed(nn.Module):
                 module.T = T
             if isinstance(module, SignedIF):
                 module.init_mem()
+                module.time_scales = None
+                module.reset_stats()
         return
 
     def set_thresh(self, thresh):
@@ -294,6 +302,65 @@ class VGG_Signed(nn.Module):
         for m in self.modules():
             if isinstance(m, SignedIF):
                 m.set_ftbc_mode(mode)
+
+    def _mark_first_signed_layer(self):
+        first = True
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.is_input_layer = first
+                first = False
+
+    def set_coding_mode(
+        self,
+        mode,
+        schedule="uniform",
+        ratio=2.0,
+        custom_weights=None,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="credit_only",
+    ):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_coding_mode(
+                    mode=mode,
+                    schedule=schedule,
+                    ratio=ratio,
+                    custom_weights=custom_weights,
+                    positive_margin=positive_margin,
+                    negative_margin=negative_margin,
+                    r0_mode=r0_mode,
+                )
+
+    def set_readout_mode(
+        self,
+        mode,
+        schedule="uniform",
+        ratio=2.0,
+        custom_weights=None,
+    ):
+        if mode not in {"event_mean", "weighted"}:
+            raise ValueError(f"Unsupported readout mode: {mode}")
+        self.readout_mode = mode
+        self.readout_schedule = schedule
+        self.readout_ratio = float(ratio)
+        self.readout_custom_weights = (
+            None if custom_weights is None else tuple(float(v) for v in custom_weights)
+        )
+
+    def aggregate_temporal_output(self, output):
+        if self.readout_mode == "event_mean" or self.T <= 1:
+            return output.mean(0)
+        weights = make_time_weights(
+            self.T,
+            mode=self.readout_schedule,
+            ratio=self.readout_ratio,
+            custom_weights=self.readout_custom_weights,
+            device=output.device,
+            dtype=output.dtype,
+        )
+        view_shape = [self.T] + [1] * (output.dim() - 1)
+        return (output * weights.view(view_shape)).sum(0)
 
     def reset_all_bias(self):
         """清零所有 SignedIF 层的 FTBC 时间步偏置"""

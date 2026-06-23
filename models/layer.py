@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from models.temporal_coding import make_event_scales
+
 class MergeTemporalDim(nn.Module):
     def __init__(self, T):
         super().__init__()
@@ -106,9 +108,22 @@ class SignedIF(nn.Module):
         self.bias_state = None
         # ==================================================================
 
+        self.coding_mode = "rate"
+        self.refinement_schedule = "uniform"
+        self.refinement_ratio = 2.0
+        self.custom_time_weights = None
+        self.positive_margin = 0.5
+        self.negative_margin = 0.5
+        self.refinement_r0_mode = "credit_only"
+        self.is_input_layer = False
+        self.time_scales = None
+
         self.pos_spike_count = 0
         self.neg_spike_count = 0
         self.total_neurons = 0
+        self.pos_spike_count_by_time = [0 for _ in range(max(int(T), 0))]
+        self.neg_spike_count_by_time = [0 for _ in range(max(int(T), 0))]
+        self.scale_operation_count = 0
         self.collect_spike_stats = True
 
     def init_mem(self):
@@ -127,9 +142,107 @@ class SignedIF(nn.Module):
         self.pos_spike_count = 0
         self.neg_spike_count = 0
         self.total_neurons = 0
+        self.pos_spike_count_by_time = [0 for _ in range(max(int(self.T), 0))]
+        self.neg_spike_count_by_time = [0 for _ in range(max(int(self.T), 0))]
+        self.scale_operation_count = 0
 
     def set_collect_spike_stats(self, enabled):
         self.collect_spike_stats = bool(enabled)
+
+    def set_coding_mode(
+        self,
+        mode,
+        schedule="uniform",
+        ratio=2.0,
+        custom_weights=None,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="credit_only",
+    ):
+        if mode not in {"rate", "monotonic_refinement"}:
+            raise ValueError(f"Unsupported coding mode: {mode}")
+        if positive_margin <= 0 or negative_margin <= 0:
+            raise ValueError("refinement margins must be positive")
+        if r0_mode not in {"credit_only", "legacy_clamp"}:
+            raise ValueError(f"Unsupported refinement R0 mode: {r0_mode}")
+        self.coding_mode = mode
+        self.refinement_schedule = schedule
+        self.refinement_ratio = float(ratio)
+        self.custom_time_weights = (
+            None if custom_weights is None else tuple(float(v) for v in custom_weights)
+        )
+        self.positive_margin = float(positive_margin)
+        self.negative_margin = float(negative_margin)
+        self.refinement_r0_mode = r0_mode
+        self.time_scales = None
+
+    @property
+    def uses_monotonic_refinement(self):
+        return self.coding_mode == "monotonic_refinement" and self.T > 1
+
+    def get_event_scales(self, reference):
+        if (
+            self.time_scales is None
+            or self.time_scales.device != reference.device
+            or self.time_scales.dtype != reference.dtype
+            or self.time_scales.numel() != self.T
+        ):
+            self.time_scales = make_event_scales(
+                self.T,
+                mode=self.refinement_schedule,
+                ratio=self.refinement_ratio,
+                custom_weights=self.custom_time_weights,
+                device=reference.device,
+                dtype=reference.dtype,
+            )
+        return self.time_scales
+
+    def prepare_temporal_input(self, sequence):
+        if not (self.uses_monotonic_refinement and self.is_input_layer):
+            return sequence
+        consolidated = torch.zeros_like(sequence)
+        consolidated[0] = sequence.sum(dim=0)
+        return consolidated
+
+    def refinement_step(self, input_t, t, mem, transmitted, bias=None):
+        if not self.uses_monotonic_refinement:
+            raise RuntimeError("refinement_step requires monotonic_refinement mode")
+        if bias is None:
+            bias = torch.zeros_like(input_t)
+
+        quantum = self.thresh.data.abs() * self.get_event_scales(input_t)[t]
+        mem = mem - bias + input_t
+        pos_spike = torch.where(
+            mem >= self.positive_margin * quantum,
+            quantum,
+            quantum.new_zeros(()),
+        )
+
+        if self.enable_signed:
+            credit_tolerance = torch.finfo(mem.dtype).eps * 8
+            has_credit = transmitted + credit_tolerance >= quantum
+            neg_spike = torch.where(
+                (mem <= -self.negative_margin * quantum) & has_credit,
+                -quantum,
+                quantum.new_zeros(()),
+            )
+        else:
+            neg_spike = torch.zeros_like(pos_spike)
+
+        spike = pos_spike + neg_spike
+        mem = mem - spike
+        transmitted = transmitted + spike
+
+        if self.enable_r0:
+            near_zero = transmitted.abs() <= torch.finfo(transmitted.dtype).eps * 8
+            transmitted = torch.where(near_zero, torch.zeros_like(transmitted), transmitted)
+            if self.refinement_r0_mode == "legacy_clamp":
+                mem = torch.where(
+                    transmitted == 0,
+                    torch.clamp(mem, min=0.0),
+                    mem,
+                )
+        return spike, mem, transmitted
 
     def get_stats(self):
         pos_spike_count = int(self.pos_spike_count)
@@ -139,9 +252,38 @@ class SignedIF(nn.Module):
             'pos_spike_count': pos_spike_count,
             'neg_spike_count': neg_spike_count,
             'total_neurons': total_neurons,
+            'positive_spikes_by_time': [
+                int(value) for value in self.pos_spike_count_by_time
+            ],
+            'negative_spikes_by_time': [
+                int(value) for value in self.neg_spike_count_by_time
+            ],
+            'scale_operations': int(self.scale_operation_count),
             'pos_spike_rate': pos_spike_count / max(total_neurons, 1),
             'neg_spike_rate': neg_spike_count / max(total_neurons, 1)
         }
+
+    def _record_spike_stats(self, spike, t, reference):
+        positive = torch.count_nonzero(spike > 0)
+        negative = torch.count_nonzero(spike < 0)
+        self.pos_spike_count = self.pos_spike_count + positive
+        self.neg_spike_count = self.neg_spike_count + negative
+        self.total_neurons += reference.numel()
+        if len(self.pos_spike_count_by_time) != self.T:
+            self.pos_spike_count_by_time = [0 for _ in range(self.T)]
+            self.neg_spike_count_by_time = [0 for _ in range(self.T)]
+        self.pos_spike_count_by_time[t] = (
+            self.pos_spike_count_by_time[t] + positive
+        )
+        self.neg_spike_count_by_time[t] = (
+            self.neg_spike_count_by_time[t] + negative
+        )
+        if self.uses_monotonic_refinement:
+            scale = self.get_event_scales(reference)[t]
+            if not torch.isclose(scale, scale.new_tensor(1.0)):
+                self.scale_operation_count = (
+                    self.scale_operation_count + positive + negative
+                )
 
     # ====================== [新增] FTBC 偏置初始化 =========================
     def set_ftbc_mode(self, mode):
@@ -232,6 +374,31 @@ class SignedIF(nn.Module):
             pos_thresh = self.thresh.data
             neg_thresh = self.neg_thresh.data
 
+            if self.uses_monotonic_refinement:
+                x = self.prepare_temporal_input(x)
+                self.mem = torch.zeros_like(x[0])
+                self.transmitted = torch.zeros_like(x[0])
+                for t in range(self.T):
+                    bias_state = (
+                        self.transmitted > 0
+                        if self.ftbc_mode == "state_low_rank"
+                        else self.transmitted
+                    )
+                    bias = self.get_ftbc_bias(t, x[t], bias_state)
+                    spike, self.mem, self.transmitted = self.refinement_step(
+                        input_t=x[t],
+                        t=t,
+                        mem=self.mem,
+                        transmitted=self.transmitted,
+                        bias=bias,
+                    )
+                    if not self.training and self.collect_spike_stats:
+                        self._record_spike_stats(spike, t, x[t])
+                    spike_pot.append(spike)
+
+                x = torch.stack(spike_pot, dim=0)
+                return x.view(self.T * batch_size, *x.shape[2:])
+
             for t in range(self.T):
                 if t == 0:
                     self.mem = 0.5 * pos_thresh
@@ -274,13 +441,7 @@ class SignedIF(nn.Module):
                 # ===========================================================
 
                 if not self.training and self.collect_spike_stats:
-                    self.pos_spike_count = (
-                        self.pos_spike_count + torch.count_nonzero(pos_spike)
-                    )
-                    self.neg_spike_count = (
-                        self.neg_spike_count + torch.count_nonzero(neg_spike)
-                    )
-                    self.total_neurons += x[t].numel()
+                    self._record_spike_stats(pos_spike + neg_spike, t, x[t])
 
                 spike = pos_spike + neg_spike
 

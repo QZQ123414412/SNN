@@ -4,7 +4,7 @@
 
 在现有 `QCFS + SNM + R0 + FTBC` 框架上，形成两个相互配合、但可以独立验证的创新方向：
 
-1. **真实残差感知 QCFS 微调**：在训练阶段模拟当前 SignedIF 神经元真实产生的转换残差，提高源 ANN 对低时间步 SNN 动力学的适应能力。
+1. **单调有符号逐次精化编码**：将等幅 rate coding 改为从粗到细的带权正负修正，使每个时间步承担不同精度的表示任务，提高低时间步的信息利用率。
 2. **状态条件低秩 FTBC**：让 SNM、R0 和 FTBC 围绕同一个累计传输状态协同工作，并将 FTBC bias 从 `T×C` 压缩为 `3×C`。
 
 最终方法不使用逐层配置搜索，不使用 early-exit，也不依赖高时间步才能生效。所有方法均在相同固定时间步：
@@ -157,94 +157,156 @@ temporary calibration accumulators
 
 ---
 
-## 4. 方向一：真实残差感知 QCFS 微调
+## 4. 方向一：单调有符号逐次精化编码
 
 ## 4.1 核心思想
 
-现有 QCFS 训练主要模拟量化误差，但没有显式模拟 SNM、R0 和 FTBC 共同运行时产生的真实时间残差。
+当前 rate coding 中，每个时间步的脉冲贡献均为 `1/T`，本质上是重复采样。低时间步时表示等级有限，早期过发放也缺少足够机会修正。
 
-先在训练集或校准集上测量：
-
-```text
-A_l：第l层ANN QCFS激活
-R_l(t)：第l层SNN前t步累计输出的平均值
-e_l(t) = R_l(t) - A_l
-```
-
-并将残差拆分为：
+新方案为每个时间步分配全局共享的时间权重：
 
 ```text
-过发放残差：e_pos = max(e, 0)
-欠发放残差：e_neg = min(e, 0)
-零激活误触发：A≈0 但 R>0
+w_t > 0
+w_t >= w_(t+1)
+sum_t w_t = 1
 ```
 
-这些残差通常不是对称高斯噪声，因此不能简单使用统一随机噪声代替。
-
-## 4.2 残差采集
-
-新建 `residual_profiler.py`：
+累计表示改为：
 
 ```text
-输入：训练集子集、ANN、SNN、固定T集合
-输出：每层、每个T的残差统计或残差样本池
+R_t = R_(t-1) + w_t * s_t
+s_t ∈ {-1, 0, +1}
 ```
 
-建议保存：
+早期大权重完成粗估计，后期小权重修正剩余误差。正脉冲向上修正，负脉冲向下撤回，不发放则保持当前结果。目标不是简单给输出乘时间系数，而是建立贯穿各层的逐次精化编码。
+
+在现有代码仍使用时间平均读出的前提下，实际事件量子实现为：
 
 ```text
-layer_name
-T
-mean
-std
-positive_ratio
-negative_ratio
-zero_false_positive_ratio
-channel-wise scale
+q_t = T * w_t * threshold
+output = mean_t(signed_event_t)
+       = threshold * sum_t(w_t * signed_digit_t)
 ```
 
-残差只能从训练集或独立 calibration set 采集，不能使用测试集。
+因此时间平均只是实现形式，数学上仍是带权有符号累计。
 
-## 4.3 微调方式
+## 4.2 编码与神经元更新
 
-在 ANN 模式的 QCFS 激活后注入采样残差：
+首版至少支持三种权重：
 
 ```text
-h_noisy = h_qcfs + gamma * sample(residual_profile[layer, T])
+uniform：w_t = 1/T，作为等幅有符号基线
+binary：归一化的 2^(-t)，验证固定粗到细编码
+calibrated：在校准集上求解受单调和归一化约束的全局权重
 ```
 
-其中 `gamma` 从小到大 warm-up，避免一开始破坏已训练模型。
-
-训练目标：
+真实中间层不能读取 ANN 目标值，因此由膜电位保存尚未表达的残差。每个时间步根据当前尺度和膜电位决定：
 
 ```text
-L = L_CE
-  + lambda_consistency * ||f_clean(x) - f_noisy(x)||²
-  + lambda_activity * mean(|h_qcfs|)
-  + lambda_saturation * mean(ReLU(|h| / threshold - 1))
+mem > positive_boundary(t)  -> s_t = +1
+mem < negative_boundary(t)  -> s_t = -1
+otherwise                   -> s_t = 0
 ```
 
-建议第一版只启用 `CE + consistency`，确认准确率收益后再加入 activity regularization，避免同时引入过多变量。
+发放后按当前 `q_t` 更新膜电位和累计表示。下游层直接接收带尺度事件；首个脉冲层先把重复静态输入汇总到第一步，使早期粗量子能够立即使用。最终分类器通过上述等价时间平均完成带权累计。
 
-## 4.4 代码改造
+## 4.3 与 SNM、R0 和 FTBC 的关系
 
-- 新建 `residual_profiler.py`：收集多时间步、逐层非对称残差。
-- 新建 `residual_aware_finetune.py`：从现有 checkpoint 微调 10～30 epoch。
-- 修改 `models/layer.py::IF`：ANN 模式支持可关闭的 residual injection。
-- 新建 `tests/test_residual_profiler.py`：验证时间维还原、残差符号和测试集隔离。
+- **SNM**：从异常补偿机制变为正式的双向残差修正规则；
+- **R0**：当不存在可撤回的正累计表示时，禁止非法负修正；
+- **FTBC**：微调正负发放边界，补偿逐层传播产生的系统性时序偏差。
 
-## 4.5 预期收益
+三者共同形成：
 
-- 提高 `T=1/2/4/8` 的转换准确率；
-- 减少后处理 FTBC 需要补偿的残差；
-- 减少过发放和后续负脉冲撤销，从而降低 SOPs；
-- 训练期增加计算，但部署推理不增加任何操作。
+```text
+双向修正 + 状态合法性约束 + 决策边界校正
+```
+
+## 4.4 权重校准与训练策略
+
+第一阶段采用 **conversion-only**：保持 QCFS checkpoint、网络权重和阈值不变，只在训练集子集或独立校准集上选择全局时间比例、正边界和负边界。这样可以直接验证编码机制本身，而不是把收益归因于重新训练。
+
+校准权重时应满足：
+
+```text
+min  activation_error + lambda_sop * event_cost
+s.t. w_t > 0, w_t >= w_(t+1), sum(w_t) = 1
+```
+
+当前实现用一个全局几何比例生成权重，并联合校准全局正、负发放边界；准确率优先，在容差内以 SOPs 作为决策依据。该过程不进行逐层配置搜索。
+
+现有实验中，固定递减权重直接作用于原 QCFS checkpoint 时性能下降，自动校准最终退化为 `ratio=1`。原因是原 checkpoint 按均匀 rate coding 训练，网络没有适应“早期大步估计、后期小步修正”的层间分布。因此第二阶段需要在固定递减编码下对 QCFS 进行轻量微调。
+
+## 4.5 递减编码感知 QCFS 微调
+
+微调从现有 QCFS checkpoint 开始，不从头训练。训练时在每个 QCFS 激活位置加入可微逐次精化代理：
+
+```text
+QCFS激活
+→ 固定单调递减时间权重
+→ STE正/负残差量化
+→ 逐次精化等效激活
+→ 传递到下一层
+```
+
+代理必须使用与部署一致的时间权重、正负修正规则和 R0 合法性约束。硬脉冲决策在前向中保持离散，反向使用 STE 或平滑替代梯度。
+
+训练同时保留两条前向：
+
+```text
+clean branch：原始QCFS激活
+refinement branch：递减有符号逐次精化代理
+```
+
+损失函数为：
+
+```text
+L = CE(logits_refinement, label)
+  + lambda_clean * CE(logits_clean, label)
+  + lambda_cons * KL(logits_refinement || stopgrad(logits_clean))
+  + lambda_event * estimated_event_rate
+```
+
+- `CE(refinement)`：让网络适应递减时间编码；
+- `CE(clean)`：保持原 QCFS 分类能力；
+- `KL`：约束微调模型不要偏离原 checkpoint；
+- `event_rate`：避免依靠增加正负脉冲换取准确率。
+
+建议采用两阶段微调：
+
+```text
+阶段A：3～5 epoch，只训练QCFS阈值、BN和分类器；
+阶段B：10～20 epoch，以较小学习率微调整个网络。
+```
+
+默认训练一个适配多个低时间步的共享 checkpoint，每个 batch 从 `T={2,4,8}` 中采样一个时间步；分别针对单一 `T` 微调只作为性能上限消融。训练数据只能来自训练集，模型选择使用验证集，测试集仅用于最终报告。
+
+## 4.6 代码改造
+
+- 新建 `models/temporal_coding.py`：生成、归一化并校验单调时间权重；
+- 修改 `models/layer.py::SignedIF`：按当前尺度执行正、负或零修正；
+- 修改模型输出读取：使用带权有符号累计值；
+- 修改 FTBC 校准重放：与新的逐次精化动力学保持一致；
+- 修改 `spike_stats.py`：单独统计事件 SOPs 和时间尺度操作；
+- 新建可微逐次精化代理，并支持 clean/refinement 双分支前向；
+- 新建轻量微调脚本，支持冻结参数阶段、全网络阶段和多时间步采样；
+- 新建逐次精化消融脚本与单元测试。
+
+## 4.7 开销与风险
+
+- 预期提高 `T=2/4/8` 的准确率或在相近准确率下降低 SOPs；
+- 二进制尺度可通过位移或权重预融合实现，但普通 GPU 上仍可能增加乘法；
+- SOPs 只统计非零事件，尺度运算必须作为 `ScaleOps` 单独报告；
+- 递减权重可能放大早期错误，因此必须检查 `T=16/32` 是否退化；
+- 微调会增加训练开销，但部署模型不增加额外可训练分支；
+- 必须同时报告微调前后的 ANN/QCFS 精度，防止只提高 SNN 而破坏源模型；
+- `T=1` 应退化为原始编码，保证基线一致。
 
 ---
 
 ## 5. 方向二：状态条件低秩 FTBC
 
-这是建议作为论文主创新的方法。
+这是与方向一互补的另一项核心创新。
 
 ## 5.1 核心状态
 
@@ -411,39 +473,40 @@ negative_sops
 ```text
 G_QCFS+SNM+R0+SCFTBC_FULL
 H_QCFS+SNM+R0+SCFTBC_LR
-I_RESQCFS+SNM+R0+SCFTBC_LR
+I_MSSR+SNM+R0+SCFTBC_LR
 ```
 
 其中：
 
 - G：只验证状态条件是否有效，保留完整时间 bias；
 - H：验证状态条件和低秩压缩；
-- I：加入方向一的残差感知 QCFS 微调。
+- I：加入方向一的单调有符号逐次精化编码。
 
 ---
 
 ## 6. 两个方向如何协同
 
-两个方向分别处理不同阶段：
+两个方向处理不同层面的误差：
 
 ```text
-方向一：训练阶段减少误差来源
-方向二：转换阶段用统一状态修正剩余误差
+方向一：提高每个时间步和每个脉冲携带的信息量
+方向二：利用累计状态校正剩余时序偏差并压缩bias
 ```
 
 完整 pipeline：
 
 ```text
 1. 加载原QCFS checkpoint
-2. 在训练/校准集采集SignedIF真实残差
-3. 进行残差感知QCFS微调
-4. 转换为SignedIF SNN
-5. 校准状态条件低秩FTBC
-6. 在固定T下进行完整推理
-7. 报告Accuracy、SOPs、Sparsity、bias开销和延迟
+2. 固定递减时间权重和逐次精化规则
+3. 用可微代理进行两阶段QCFS轻量微调
+4. 转换为支持单调带权事件的SignedIF SNN
+5. 在校准集确定全局发放边界
+6. 可选校准状态条件低秩FTBC
+7. 在固定T下进行完整推理
+8. 报告Accuracy、SOPs、ScaleOps、Sparsity、bias开销和延迟
 ```
 
-方向一不是方向二成立的前提。必须先分别验证，再验证组合，才能判断收益是否可叠加。
+方向一的 conversion-only 和微调版本必须分别报告；方向一也不是方向二成立的前提。必须先分别验证，再验证组合，才能判断收益是否可叠加。
 
 ---
 
@@ -470,6 +533,7 @@ E_MAC = 4.6 pJ
 ```text
 Accuracy
 Input-driven SOPs
+ScaleOps
 Positive spike rate
 Negative spike rate
 Spike sparsity
@@ -501,7 +565,10 @@ F  QCFS+SNM+R0+FTBC
 ```text
 G  QCFS+SNM+R0+状态条件完整FTBC
 H  QCFS+SNM+R0+状态条件低秩FTBC
-I  残差感知QCFS+SNM+R0+状态条件低秩FTBC
+I  单调有符号逐次精化（直接转换）
+J  单调有符号逐次精化（仅阈值/BN/分类器微调）
+K  单调有符号逐次精化（全网络轻量微调）
+L  微调逐次精化+SNM+R0+状态条件低秩FTBC
 ```
 
 ### 8.3 关键消融
@@ -511,7 +578,12 @@ I  残差感知QCFS+SNM+R0+状态条件低秩FTBC
 标准FTBC vs 状态条件完整FTBC
 状态条件完整FTBC vs 状态条件低秩FTBC
 对称校准损失 vs 非对称SOPs约束
-普通QCFS vs 残差感知QCFS
+均匀编码 vs 固定二进制递减权重 vs 校准单调权重
+仅输出加权 vs 各层带权传播
+递减权重直接转换 vs 仅阈值微调 vs 全网络微调
+单时间步微调 vs 多时间步共享checkpoint
+无clean约束 vs 无KL约束 vs 无event正则 vs 完整损失
+微调前后ANN/QCFS精度与SNN精度
 方向一单独使用 vs 方向二单独使用 vs 两者组合
 ```
 
@@ -550,12 +622,20 @@ CIFAR-10或CIFAR-100 / ResNet20或ResNet34
 3. 增加 bias 存储、读取和延迟统计。
 4. 完成 G、H 与 F 的对比。
 
-### 第三阶段：实现训练端增强
+### 第三阶段：实现逐次精化编码
 
-1. 采集多时间步真实残差。
-2. 实现残差感知微调。
-3. 完成普通 QCFS 与残差感知 QCFS 对比。
-4. 完成最终配置 I。
+1. 实现统一、固定递减和校准单调三类时间权重。
+2. 实现各层带权有符号传播和加权输出读取。
+3. 统计 SOPs、ScaleOps、正负脉冲率、稀疏度和延迟。
+4. 先在 `T=2/4` 筛选，再扩展到全部时间步并完成配置 I。
+
+### 第四阶段：递减编码感知微调
+
+1. 实现可微逐次精化代理和 clean/refinement 双分支。
+2. 从现有 checkpoint 执行阈值、BN、分类器微调。
+3. 在较小学习率下执行全网络微调。
+4. 完成 I、J、K 的训练成本、ANN精度和 SNN 指标对比。
+5. 只在微调后的递减编码有效时，再验证与方向二组合的配置 L。
 
 ---
 
@@ -574,7 +654,10 @@ CIFAR-10或CIFAR-100 / ResNet20或ResNet34
 ```text
 在多个固定T上具有一致收益，而不是只改善单个T；
 收益能够迁移到至少两个数据集；
-推理阶段不增加额外操作。
+Accuracy-SOPs或Accuracy-Sparsity形成稳定Pareto改善；
+ScaleOps和实际延迟没有抵消事件数下降带来的收益。
+微调后递减权重必须优于相同训练预算下的均匀权重；
+源ANN/QCFS精度下降应受控，并完整报告训练成本。
 ```
 
 最终方法应重点展示 Accuracy-SOPs 和 Accuracy-bias-storage 的 Pareto 优势，而不是只报告单一最高准确率。
@@ -585,10 +668,10 @@ CIFAR-10或CIFAR-100 / ResNet20或ResNet34
 
 建议收敛为两点：
 
-1. **Signed-state-conditioned temporal correction**  
+1. **Signed-state-conditioned temporal correction**
    利用 SignedIF 的净累计传输状态统一控制 SNM、R0 和 FTBC，使时序校正显式适应正脉冲撤销状态与 R0 保护状态。
 
-2. **Residual-aware QCFS fine-tuning**  
-   从真实 SignedIF 多时间步动力学中学习非对称转换残差分布，并在源 ANN 微调阶段注入该残差，提高固定低时间步下的转换鲁棒性。
+2. **Monotonic signed successive refinement**
+   使用非负、归一化且单调不增的时间尺度，将等幅重复发放改造成从粗到细的正负残差修正，并通过递减编码感知的轻量 QCFS 微调，使源网络主动适应该编码动力学。SNM、R0 与 FTBC 分别承担双向修正、状态约束与边界校正。
 
 低秩 bias 压缩、SOPs 和能耗评价是第一点的重要组成部分，但不应被单独夸大为第三个完全独立的算法贡献。

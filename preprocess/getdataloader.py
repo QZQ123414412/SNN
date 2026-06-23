@@ -1,12 +1,43 @@
-from textwrap import fill
+from pathlib import Path
+
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import torch
 import os
 from preprocess.augment import Cutout, CIFAR10Policy
 
-# your own data dir
-DIR = {'CIFAR10': '/root/autodl-tmp/datasets', 'CIFAR100': '/root/autodl-tmp/datasets', 'ImageNet': 'YOUR_IMAGENET_DIR'}
+
+def resolve_dataset_root(dataset):
+    dataset = dataset.upper()
+    specific = os.environ.get(f"QCFS_{dataset}_ROOT")
+    if specific:
+        return specific
+    common = os.environ.get("QCFS_DATA_ROOT")
+    if common:
+        return common
+    legacy_candidates = (
+        [Path("D:/root/autodl-tmp/datasets")]
+        if os.name == "nt"
+        else [Path("/root/autodl-tmp/datasets")]
+    )
+    for candidate in legacy_candidates:
+        if candidate.exists():
+            return str(candidate.resolve())
+    return str((Path.home() / "datasets").resolve())
+
+
+def resolve_num_workers(default):
+    configured = os.environ.get("QCFS_NUM_WORKERS")
+    if configured is not None:
+        return max(int(configured), 0)
+    return 0 if os.name == "nt" else int(default)
+
+
+DIR = {
+    "CIFAR10": resolve_dataset_root("CIFAR10"),
+    "CIFAR100": resolve_dataset_root("CIFAR100"),
+    "ImageNet": os.environ.get("QCFS_IMAGENET_ROOT", "YOUR_IMAGENET_DIR"),
+}
 
 def GetCifar10(batchsize, attack=False):
     trans_t = transforms.Compose([transforms.RandomCrop(32, padding=4),
@@ -22,8 +53,9 @@ def GetCifar10(batchsize, attack=False):
         trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
     train_data = datasets.CIFAR10(DIR['CIFAR10'], train=True, transform=trans_t, download=True)
     test_data = datasets.CIFAR10(DIR['CIFAR10'], train=False, transform=trans, download=True) 
-    train_dataloader = DataLoader(train_data, batch_size=batchsize, shuffle=True, num_workers=8)
-    test_dataloader = DataLoader(test_data, batch_size=batchsize, shuffle=False, num_workers=8)
+    workers = resolve_num_workers(8)
+    train_dataloader = DataLoader(train_data, batch_size=batchsize, shuffle=True, num_workers=workers)
+    test_dataloader = DataLoader(test_data, batch_size=batchsize, shuffle=False, num_workers=workers)
     return train_dataloader, test_dataloader
 
 def GetCifar100(batchsize):
@@ -37,8 +69,10 @@ def GetCifar100(batchsize):
     trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[n/255. for n in [129.3, 124.1, 112.4]], std=[n/255. for n in [68.2,  65.4,  70.4]])])
     train_data = datasets.CIFAR100(DIR['CIFAR100'], train=True, transform=trans_t, download=True)
     test_data = datasets.CIFAR100(DIR['CIFAR100'], train=False, transform=trans, download=True) 
-    train_dataloader = DataLoader(train_data, batch_size=batchsize, shuffle=True, num_workers=8, pin_memory=True)
-    test_dataloader = DataLoader(test_data, batch_size=batchsize, shuffle=False, num_workers=4, pin_memory=True)
+    train_workers = resolve_num_workers(8)
+    test_workers = resolve_num_workers(4)
+    train_dataloader = DataLoader(train_data, batch_size=batchsize, shuffle=True, num_workers=train_workers, pin_memory=True)
+    test_dataloader = DataLoader(test_data, batch_size=batchsize, shuffle=False, num_workers=test_workers, pin_memory=True)
     return train_dataloader, test_dataloader
 
 def GetImageNet(batchsize):
