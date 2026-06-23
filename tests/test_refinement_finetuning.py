@@ -2,6 +2,7 @@ import unittest
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from models.layer import IF
 from scripts.train.refinement_finetune import (
@@ -10,6 +11,7 @@ from scripts.train.refinement_finetune import (
     get_refinement_event_rate,
     sample_time_steps,
     set_refinement_proxy,
+    split_train_validation_loader,
 )
 
 
@@ -25,6 +27,18 @@ class TinyQCFS(nn.Module):
 
     def forward(self, inputs):
         return self.classifier(self.features(inputs))
+
+
+class TransformDataset(Dataset):
+    def __init__(self, count, transform):
+        self.count = count
+        self.transform = transform
+
+    def __len__(self):
+        return self.count
+
+    def __getitem__(self, index):
+        return torch.tensor([float(index)]), index
 
 
 class RefinementProxyActivationTest(unittest.TestCase):
@@ -131,6 +145,44 @@ class RefinementFinetuneUtilityTest(unittest.TestCase):
         _ = model(torch.randn(3, 4))
 
         self.assertGreater(get_refinement_event_rate(model).item(), 0.0)
+
+    def test_validation_loader_is_split_from_training_dataset(self):
+        train_dataset = TensorDataset(torch.arange(10).float().view(10, 1), torch.arange(10))
+        train_loader = DataLoader(train_dataset, batch_size=2, shuffle=False)
+
+        split_train, split_val = split_train_validation_loader(
+            train_loader,
+            evaluation_loader=None,
+            val_fraction=0.2,
+            seed=7,
+            batch_size=2,
+        )
+
+        self.assertEqual(len(split_train.dataset), 8)
+        self.assertEqual(len(split_val.dataset), 2)
+        self.assertIs(split_train.dataset.dataset, train_dataset)
+        self.assertIs(split_val.dataset.dataset, train_dataset)
+        self.assertTrue(
+            set(split_train.dataset.indices).isdisjoint(set(split_val.dataset.indices))
+        )
+
+    def test_validation_split_uses_evaluation_transform_on_training_samples(self):
+        train_dataset = TransformDataset(count=10, transform="train-transform")
+        eval_dataset = TransformDataset(count=4, transform="eval-transform")
+        train_loader = DataLoader(train_dataset, batch_size=2, shuffle=False)
+        eval_loader = DataLoader(eval_dataset, batch_size=2, shuffle=False)
+
+        split_train, split_val = split_train_validation_loader(
+            train_loader,
+            evaluation_loader=eval_loader,
+            val_fraction=0.2,
+            seed=7,
+            batch_size=2,
+        )
+
+        self.assertEqual(split_train.dataset.dataset.transform, "train-transform")
+        self.assertEqual(split_val.dataset.dataset.transform, "eval-transform")
+        self.assertEqual(len(split_val.dataset), 2)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import argparse
+import copy
 import os
 import sys
 from pathlib import Path
@@ -10,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import DataLoader, Subset
 
 from models import IF, modelpool
 from utils import seed_all
@@ -87,6 +89,56 @@ def sample_time_steps(time_steps, probabilities=None, generator=None):
         raise ValueError("probabilities must be non-negative and sum to a positive value")
     index = torch.multinomial(weights / weights.sum(), 1, generator=generator).item()
     return values[index]
+
+
+def split_train_validation_loader(
+    train_loader,
+    evaluation_loader=None,
+    val_fraction=0.1,
+    seed=42,
+    batch_size=None,
+):
+    if not 0.0 < float(val_fraction) < 1.0:
+        raise ValueError("val_fraction must be between 0 and 1")
+    dataset = train_loader.dataset
+    dataset_size = len(dataset)
+    if dataset_size < 2:
+        raise ValueError("training dataset must contain at least two samples")
+
+    generator = torch.Generator().manual_seed(int(seed))
+    indices = torch.randperm(dataset_size, generator=generator).tolist()
+    val_size = min(max(int(round(dataset_size * float(val_fraction))), 1), dataset_size - 1)
+    val_indices = indices[:val_size]
+    train_indices = indices[val_size:]
+
+    validation_dataset = dataset
+    if (
+        evaluation_loader is not None
+        and hasattr(dataset, "transform")
+        and hasattr(evaluation_loader.dataset, "transform")
+    ):
+        validation_dataset = copy.copy(dataset)
+        validation_dataset.transform = evaluation_loader.dataset.transform
+
+    common_kwargs = {
+        "batch_size": batch_size or train_loader.batch_size,
+        "num_workers": getattr(train_loader, "num_workers", 0),
+        "pin_memory": getattr(train_loader, "pin_memory", False),
+        "collate_fn": train_loader.collate_fn,
+    }
+    split_train = DataLoader(
+        Subset(dataset, train_indices),
+        shuffle=True,
+        drop_last=getattr(train_loader, "drop_last", False),
+        **common_kwargs,
+    )
+    split_validation = DataLoader(
+        Subset(validation_dataset, val_indices),
+        shuffle=False,
+        drop_last=False,
+        **common_kwargs,
+    )
+    return split_train, split_validation
 
 
 def configure_trainable_stage(model, stage):
@@ -392,6 +444,7 @@ def parse_args():
     parser.add_argument("--stage_a_lr", default=1e-3, type=float)
     parser.add_argument("--stage_b_lr", default=1e-4, type=float)
     parser.add_argument("--weight_decay", default=5e-4, type=float)
+    parser.add_argument("--val_fraction", default=0.1, type=float)
     parser.add_argument("--freeze_bn_stats", action="store_true", default=True)
     parser.add_argument(
         "--output_dir",
@@ -412,7 +465,14 @@ def main():
 
     from preprocess import datapool
 
-    train_loader, val_loader = datapool(args.dataset, args.batch_size)
+    raw_train_loader, evaluation_transform_loader = datapool(args.dataset, args.batch_size)
+    train_loader, val_loader = split_train_validation_loader(
+        raw_train_loader,
+        evaluation_loader=evaluation_transform_loader,
+        val_fraction=args.val_fraction,
+        seed=args.seed,
+        batch_size=args.batch_size,
+    )
     model = modelpool(args.model, args.dataset)
     model.set_L(args.L)
     checkpoint = args.checkpoint or os.path.join(
