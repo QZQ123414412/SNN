@@ -61,6 +61,114 @@ class IF(nn.Module):
         self.L = L
         self.T = T
         self.loss = 0
+        self.refinement_proxy_enabled = False
+        self.refinement_proxy_time_steps = 4
+        self.refinement_proxy_schedule = "uniform"
+        self.refinement_proxy_ratio = 1.0
+        self.refinement_proxy_custom_weights = None
+        self.refinement_proxy_positive_margin = 0.5
+        self.refinement_proxy_negative_margin = 0.5
+        self.refinement_proxy_r0_mode = "credit_only"
+        self.refinement_event_count = None
+        self.refinement_event_total = 0
+
+    def set_refinement_proxy(
+        self,
+        enabled,
+        time_steps=4,
+        schedule="uniform",
+        ratio=1.0,
+        custom_weights=None,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="credit_only",
+    ):
+        if int(time_steps) < 1:
+            raise ValueError("refinement proxy time_steps must be >= 1")
+        if positive_margin <= 0 or negative_margin <= 0:
+            raise ValueError("refinement proxy margins must be positive")
+        if r0_mode not in {"credit_only", "legacy_clamp"}:
+            raise ValueError(f"Unsupported refinement proxy R0 mode: {r0_mode}")
+        self.refinement_proxy_enabled = bool(enabled)
+        self.refinement_proxy_time_steps = int(time_steps)
+        self.refinement_proxy_schedule = schedule
+        self.refinement_proxy_ratio = float(ratio)
+        self.refinement_proxy_custom_weights = (
+            None if custom_weights is None else tuple(float(v) for v in custom_weights)
+        )
+        self.refinement_proxy_positive_margin = float(positive_margin)
+        self.refinement_proxy_negative_margin = float(negative_margin)
+        self.refinement_proxy_r0_mode = r0_mode
+
+    def reset_refinement_proxy_stats(self):
+        self.refinement_event_count = None
+        self.refinement_event_total = 0
+
+    def get_refinement_event_rate(self):
+        if self.refinement_event_count is None or self.refinement_event_total == 0:
+            return self.thresh.new_tensor(0.0)
+        return self.refinement_event_count / float(self.refinement_event_total)
+
+    def _qcfs_activation(self, x):
+        x = x / self.thresh
+        x = torch.clamp(x, 0, 1)
+        x = myfloor(x * self.L + 0.5) / self.L
+        return x * self.thresh
+
+    def _ste_gate(self, signal):
+        hard = (signal >= 0).to(signal.dtype)
+        surrogate = torch.clamp(signal + 0.5, 0.0, 1.0)
+        return hard + surrogate - surrogate.detach()
+
+    def _record_refinement_events(self, event_count, event_total):
+        if self.refinement_event_count is None:
+            self.refinement_event_count = event_count
+        else:
+            self.refinement_event_count = self.refinement_event_count + event_count
+        self.refinement_event_total += int(event_total)
+
+    def _forward_refinement_proxy(self, x):
+        target = self._qcfs_activation(x)
+        T = self.refinement_proxy_time_steps
+        if T <= 1:
+            return target
+
+        event_scales = make_event_scales(
+            T,
+            mode=self.refinement_proxy_schedule,
+            ratio=self.refinement_proxy_ratio,
+            custom_weights=self.refinement_proxy_custom_weights,
+            device=target.device,
+            dtype=target.dtype,
+        )
+        threshold = self.thresh.abs().to(device=target.device, dtype=target.dtype)
+        eps = torch.finfo(target.dtype).eps * 8
+        mem = target * float(T)
+        transmitted = torch.zeros_like(target)
+        events = []
+        event_count = target.new_tensor(0.0)
+
+        for t in range(T):
+            quantum = torch.clamp(threshold * event_scales[t], min=eps)
+            pos_signal = (mem - self.refinement_proxy_positive_margin * quantum) / quantum
+            pos_gate = self._ste_gate(pos_signal)
+            neg_signal = (-mem - self.refinement_proxy_negative_margin * quantum) / quantum
+            credit_signal = (transmitted - quantum) / quantum
+            neg_gate = self._ste_gate(neg_signal) * self._ste_gate(credit_signal)
+            spike = (pos_gate - neg_gate) * quantum
+            mem = mem - spike
+            transmitted = transmitted + spike
+
+            if self.refinement_proxy_r0_mode == "legacy_clamp":
+                no_credit = transmitted.abs() <= eps
+                transmitted = torch.where(no_credit, torch.zeros_like(transmitted), transmitted)
+                mem = torch.where(no_credit, torch.clamp(mem, min=0.0), mem)
+
+            events.append(spike)
+            event_count = event_count + pos_gate.sum() + neg_gate.sum()
+
+        self._record_refinement_events(event_count, target.numel() * T)
+        return torch.stack(events, dim=0).mean(0)
 
     def forward(self, x):
         if self.T > 0:
@@ -75,11 +183,10 @@ class IF(nn.Module):
                 spike_pot.append(spike)
             x = torch.stack(spike_pot, dim=0)
             x = self.merge(x)
+        elif self.refinement_proxy_enabled:
+            x = self._forward_refinement_proxy(x)
         else:
-            x = x / self.thresh
-            x = torch.clamp(x, 0, 1)
-            x = myfloor(x*self.L+0.5)/self.L
-            x = x * self.thresh
+            x = self._qcfs_activation(x)
         return x
 
 def add_dimention(x, T):
