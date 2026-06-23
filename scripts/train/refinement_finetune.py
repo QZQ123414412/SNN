@@ -1,7 +1,9 @@
 import argparse
 import copy
+import json
 import os
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -248,6 +250,7 @@ def train_one_epoch(
     lambda_cons=1.0,
     lambda_event=0.0,
     freeze_bn_stats=True,
+    max_batches=0,
 ):
     model.train()
     if freeze_bn_stats:
@@ -260,7 +263,10 @@ def train_one_epoch(
         "event_rate": 0.0,
         "samples": 0,
     }
-    for inputs, targets in loader:
+    batches = 0
+    for batch_index, (inputs, targets) in enumerate(loader):
+        if max_batches and batch_index >= max_batches:
+            break
         inputs = inputs.to(device)
         targets = targets.to(device)
         current_T = sample_time_steps(time_steps, time_step_probabilities)
@@ -281,29 +287,38 @@ def train_one_epoch(
         )
         loss.backward()
         optimizer.step()
+        batches += 1
         batch_size = int(targets.numel())
         totals["samples"] += batch_size
         for key in ("loss", "ce_refinement", "ce_clean", "kl_consistency", "event_rate"):
             totals[key] += float(metrics[key].item()) * batch_size
-    return {
+    averaged = {
         key: value / max(totals["samples"], 1)
         for key, value in totals.items()
         if key != "samples"
     }
+    averaged["samples"] = totals["samples"]
+    averaged["batches"] = batches
+    return averaged
 
 
 @torch.no_grad()
-def evaluate_clean(model, loader, device):
+def evaluate_clean(model, loader, device, max_batches=0, return_count=False):
     model.eval()
     set_refinement_proxy(model, enabled=False)
     correct = 0
     total = 0
-    for inputs, targets in loader:
+    for batch_index, (inputs, targets) in enumerate(loader):
+        if max_batches and batch_index >= max_batches:
+            break
         logits = model(inputs.to(device))
         predicted = logits.argmax(dim=1).cpu()
         total += int(targets.numel())
         correct += int(predicted.eq(targets).sum().item())
-    return 100.0 * correct / max(total, 1)
+    accuracy = 100.0 * correct / max(total, 1)
+    if return_count:
+        return accuracy, total
+    return accuracy
 
 
 @torch.no_grad()
@@ -317,6 +332,8 @@ def evaluate_refinement(
     custom_weights=None,
     positive_margin=0.5,
     negative_margin=0.5,
+    max_batches=0,
+    return_count=False,
 ):
     model.eval()
     set_refinement_proxy(
@@ -331,12 +348,39 @@ def evaluate_refinement(
     )
     correct = 0
     total = 0
-    for inputs, targets in loader:
+    for batch_index, (inputs, targets) in enumerate(loader):
+        if max_batches and batch_index >= max_batches:
+            break
         logits = model(inputs.to(device))
         predicted = logits.argmax(dim=1).cpu()
         total += int(targets.numel())
         correct += int(predicted.eq(targets).sum().item())
-    return 100.0 * correct / max(total, 1)
+    accuracy = 100.0 * correct / max(total, 1)
+    if return_count:
+        return accuracy, total
+    return accuracy
+
+
+def _json_ready(value):
+    if isinstance(value, torch.Tensor):
+        if value.numel() == 1:
+            return value.item()
+        return value.detach().cpu().tolist()
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    return value
+
+
+def append_epoch_record(path, record):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(_json_ready(record), ensure_ascii=False, sort_keys=True))
+        handle.write("\n")
 
 
 def load_qcfs_checkpoint(model, checkpoint_path, device):
@@ -384,9 +428,16 @@ def run_stage(
             lambda_cons=args.lambda_cons,
             lambda_event=args.lambda_event,
             freeze_bn_stats=args.freeze_bn_stats,
+            max_batches=args.max_train_batches,
         )
         scheduler.step()
-        clean_acc = evaluate_clean(model, val_loader, device)
+        clean_acc, clean_samples = evaluate_clean(
+            model,
+            val_loader,
+            device,
+            max_batches=args.max_val_batches,
+            return_count=True,
+        )
         refinement_accs = [
             evaluate_refinement(
                 model,
@@ -397,10 +448,32 @@ def run_stage(
                 ratio=args.ratio,
                 positive_margin=args.positive_margin,
                 negative_margin=args.negative_margin,
+                max_batches=args.max_val_batches,
             )
             for T in args.time_steps
         ]
         score = sum(refinement_accs) / len(refinement_accs)
+        latest_path = best_path.with_name(best_path.stem + "_latest.pth")
+        torch.save(model.state_dict(), latest_path)
+        record = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "stage": stage,
+            "epoch": epoch + 1,
+            "epochs": epochs,
+            "lr": scheduler.get_last_lr()[0],
+            "train": metrics,
+            "validation": {
+                "clean_acc": clean_acc,
+                "clean_samples": clean_samples,
+                "refinement_acc_by_T": dict(zip(args.time_steps, refinement_accs)),
+                "refinement_avg": score,
+            },
+            "paths": {
+                "latest_checkpoint": latest_path,
+                "best_checkpoint": best_path,
+            },
+        }
+        append_epoch_record(args.metrics_jsonl, record)
         print(
             f"stage={stage} epoch={epoch + 1}/{epochs} "
             f"loss={metrics['loss']:.5f} event={metrics['event_rate']:.5f} "
@@ -410,6 +483,17 @@ def run_stage(
         if score > best_score:
             best_score = score
             torch.save(model.state_dict(), best_path)
+            append_epoch_record(
+                args.metrics_jsonl,
+                {
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "event": "new_best",
+                    "stage": stage,
+                    "epoch": epoch + 1,
+                    "score": best_score,
+                    "best_checkpoint": best_path,
+                },
+            )
     return best_score
 
 
@@ -445,11 +529,14 @@ def parse_args():
     parser.add_argument("--stage_b_lr", default=1e-4, type=float)
     parser.add_argument("--weight_decay", default=5e-4, type=float)
     parser.add_argument("--val_fraction", default=0.1, type=float)
+    parser.add_argument("--max_train_batches", default=0, type=int)
+    parser.add_argument("--max_val_batches", default=0, type=int)
     parser.add_argument("--freeze_bn_stats", action="store_true", default=True)
     parser.add_argument(
         "--output_dir",
         default="docs/results/refinement_finetune/checkpoints",
     )
+    parser.add_argument("--metrics_jsonl", default="")
     parser.add_argument("--suffix", default="refinement_ft")
     return parser.parse_args()
 
@@ -487,6 +574,27 @@ def main():
         f"{args.model}_{args.dataset}_L[{args.L}]_{args.schedule}_"
         f"ratio[{args.ratio:g}]_{args.suffix}.pth"
     )
+    if not args.metrics_jsonl:
+        args.metrics_jsonl = str(best_path.with_suffix(".jsonl"))
+    append_epoch_record(
+        args.metrics_jsonl,
+        {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "event": "start",
+            "dataset": args.dataset,
+            "model": args.model,
+            "checkpoint": checkpoint,
+            "time_steps": args.time_steps,
+            "time_step_probabilities": args.time_step_probabilities,
+            "schedule": args.schedule,
+            "ratio": args.ratio,
+            "stage_a_epochs": args.stage_a_epochs,
+            "stage_b_epochs": args.stage_b_epochs,
+            "max_train_batches": args.max_train_batches,
+            "max_val_batches": args.max_val_batches,
+            "best_checkpoint": best_path,
+        },
+    )
 
     best_score = -1.0
     if args.stage_a_epochs > 0:
@@ -515,7 +623,19 @@ def main():
             best_score=best_score,
             best_path=best_path,
         )
-    print(f"Best refinement validation score={best_score:.2f}; saved to {best_path}")
+    append_epoch_record(
+        args.metrics_jsonl,
+        {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "event": "finished",
+            "best_score": best_score,
+            "best_checkpoint": best_path,
+        },
+    )
+    print(
+        f"Best refinement validation score={best_score:.2f}; "
+        f"saved to {best_path}; metrics={args.metrics_jsonl}"
+    )
 
 
 if __name__ == "__main__":

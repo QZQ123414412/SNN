@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from unittest.mock import mock_open, patch
 
 import torch
 import torch.nn as nn
@@ -6,12 +8,15 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from models.layer import IF
 from scripts.train.refinement_finetune import (
+    append_epoch_record,
     compute_dual_branch_loss,
     configure_trainable_stage,
+    evaluate_clean,
     get_refinement_event_rate,
     sample_time_steps,
     set_refinement_proxy,
     split_train_validation_loader,
+    train_one_epoch,
 )
 
 
@@ -183,6 +188,70 @@ class RefinementFinetuneUtilityTest(unittest.TestCase):
         self.assertEqual(split_train.dataset.dataset.transform, "train-transform")
         self.assertEqual(split_val.dataset.dataset.transform, "eval-transform")
         self.assertEqual(len(split_val.dataset), 2)
+
+    def test_train_one_epoch_honors_max_batches(self):
+        model = TinyQCFS()
+        loader = DataLoader(
+            TensorDataset(torch.randn(6, 4), torch.tensor([0, 1, 0, 1, 0, 1])),
+            batch_size=2,
+            shuffle=False,
+        )
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+
+        metrics = train_one_epoch(
+            model,
+            loader,
+            optimizer,
+            device=torch.device("cpu"),
+            time_steps=[2],
+            max_batches=1,
+        )
+
+        self.assertEqual(metrics["batches"], 1)
+        self.assertEqual(metrics["samples"], 2)
+
+    def test_evaluate_clean_honors_max_batches(self):
+        model = TinyQCFS()
+        loader = DataLoader(
+            TensorDataset(torch.randn(6, 4), torch.tensor([0, 1, 0, 1, 0, 1])),
+            batch_size=2,
+            shuffle=False,
+        )
+
+        accuracy, evaluated = evaluate_clean(
+            model,
+            loader,
+            torch.device("cpu"),
+            max_batches=1,
+            return_count=True,
+        )
+
+        self.assertGreaterEqual(accuracy, 0.0)
+        self.assertEqual(evaluated, 2)
+
+    def test_append_epoch_record_writes_jsonl_incrementally(self):
+        mocked_open = mock_open()
+
+        with patch.object(Path, "mkdir") as mocked_mkdir, patch.object(
+            Path,
+            "open",
+            mocked_open,
+        ):
+            append_epoch_record(
+                Path("docs/results/refinement_finetune/test_metrics.jsonl"),
+                {
+                    "stage": "A",
+                    "epoch": 1,
+                    "metrics": {"loss": 1.25},
+                },
+            )
+
+        mocked_mkdir.assert_called_once_with(parents=True, exist_ok=True)
+        mocked_open.assert_called_once_with("a", encoding="utf-8")
+        writes = [call.args[0] for call in mocked_open().write.call_args_list]
+        self.assertIn('"epoch": 1', writes[0])
+        self.assertIn('"loss": 1.25', writes[0])
+        self.assertEqual(writes[1], "\n")
 
 
 if __name__ == "__main__":
