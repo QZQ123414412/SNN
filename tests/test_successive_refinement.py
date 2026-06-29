@@ -13,6 +13,7 @@ from models.layer import SignedIF
 from models.temporal_coding import make_time_scales
 from models.VGG import vgg16_signed
 from scripts.experiments.run_successive_refinement_ablation import (
+    BASE_CONFIGS,
     FINAL_NEGATIVE_MARGIN,
     FINAL_OVER_WEIGHT,
     FINAL_POSITIVE_MARGIN,
@@ -314,6 +315,22 @@ class SuccessiveRefinementCalibrationTest(unittest.TestCase):
 
 
 class SuccessiveRefinementAblationConfigTest(unittest.TestCase):
+    def test_three_way_rate_configs_are_controlled(self):
+        full = BASE_CONFIGS["F_RATE_FULL_FTBC"]
+        low_rank = BASE_CONFIGS["H_RATE_STATE_LR_MATCHED"]
+
+        for config in (full, low_rank):
+            self.assertEqual(config["coding_mode"], "rate")
+            self.assertTrue(config["signed"])
+            self.assertTrue(config["r0"])
+            self.assertEqual(config["r0_mode"], "legacy_clamp")
+            self.assertFalse(config["expand_ratios"])
+
+        self.assertEqual(full["ftbc_mode"], "full")
+        self.assertIsNone(full["over_weight"])
+        self.assertEqual(low_rank["ftbc_mode"], "state_low_rank")
+        self.assertEqual(low_rank["over_weight"], FINAL_OVER_WEIGHT)
+
     def test_final_configuration_constants_match_reported_method(self):
         self.assertEqual(FINAL_TIME_SCALE_RATIO, 1.0)
         self.assertEqual(FINAL_POSITIVE_MARGIN, 0.55)
