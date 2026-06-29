@@ -59,6 +59,22 @@ BASE_CONFIGS = OrderedDict(
             ),
         ),
         (
+            "F_RATE_FULL_FTBC",
+            dict(
+                coding_mode="rate",
+                schedule="rate",
+                ratio=1.0,
+                signed=True,
+                r0=True,
+                ftbc_mode="full",
+                expand_ratios=False,
+                positive_margin=0.5,
+                negative_margin=0.5,
+                r0_mode="legacy_clamp",
+                over_weight=None,
+            ),
+        ),
+        (
             "H_RATE_STATE_LR",
             dict(
                 coding_mode="rate",
@@ -72,6 +88,22 @@ BASE_CONFIGS = OrderedDict(
                 negative_margin=0.5,
                 r0_mode="legacy_clamp",
                 over_weight=2.0,
+            ),
+        ),
+        (
+            "H_RATE_STATE_LR_MATCHED",
+            dict(
+                coding_mode="rate",
+                schedule="rate",
+                ratio=1.0,
+                signed=True,
+                r0=True,
+                ftbc_mode="state_low_rank",
+                expand_ratios=False,
+                positive_margin=0.5,
+                negative_margin=0.5,
+                r0_mode="legacy_clamp",
+                over_weight=FINAL_OVER_WEIGHT,
             ),
         ),
         (
