@@ -315,6 +315,32 @@ class SuccessiveRefinementCalibrationTest(unittest.TestCase):
 
 
 class SuccessiveRefinementAblationConfigTest(unittest.TestCase):
+    def test_cifar10_five_way_configs_match_design(self):
+        expected = {
+            "A_QCFS_R0": (False, True, "none", None),
+            "B_QCFS_SNM_R0": (True, True, "none", None),
+            "C_QCFS_R0_FULL_FTBC": (False, True, "full", None),
+            "D_QCFS_SNM_R0_FULL_FTBC": (True, True, "full", None),
+            "E_QCFS_SNM_R0_STATE_LR": (
+                True,
+                True,
+                "state_low_rank",
+                FINAL_OVER_WEIGHT,
+            ),
+        }
+
+        for name, (signed, r0, ftbc_mode, over_weight) in expected.items():
+            config = BASE_CONFIGS[name]
+            self.assertEqual(config["coding_mode"], "rate")
+            self.assertEqual(config["schedule"], "rate")
+            self.assertEqual(config["ratio"], 1.0)
+            self.assertEqual(config["signed"], signed)
+            self.assertEqual(config["r0"], r0)
+            self.assertEqual(config["ftbc_mode"], ftbc_mode)
+            self.assertEqual(config["r0_mode"], "legacy_clamp")
+            self.assertEqual(config["over_weight"], over_weight)
+            self.assertFalse(config["expand_ratios"])
+
     def test_three_way_rate_configs_are_controlled(self):
         full = BASE_CONFIGS["F_RATE_FULL_FTBC"]
         low_rank = BASE_CONFIGS["H_RATE_STATE_LR_MATCHED"]
