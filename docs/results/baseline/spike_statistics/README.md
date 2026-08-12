@@ -19,9 +19,9 @@ The current experiment branch is:
 
 ## 相关文档
 
-- `../../methodology/metric_definitions.md`：指标公式和实现约定；
-- `../../methodology/experiment_protocol.md`：六配置实验运行协议；
-- `ABLATION_RESULTS_VGG_cifar100_add_3_quantity_v2.md`：CIFAR-100/VGG16 正式结果。
+- `../../../methodology/metric_definitions.md`：指标公式和实现约定；
+- `../../../methodology/experiment_protocol.md`：六配置实验运行协议；
+- `cifar100/ABLATION_RESULTS_VGG_cifar100_add_3_quantity_v2.md`：CIFAR-100/VGG16 正式结果。
 
 ## Main Convention
 

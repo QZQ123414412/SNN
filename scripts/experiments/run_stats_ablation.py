@@ -132,6 +132,7 @@ def format_pct(value):
 
 def write_markdown_report(path, args, results, layer_results):
     Ts = args.time_steps
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(f"# Spike Statistics Ablation on {args.dataset.upper()} / VGG16\n\n")
         f.write(f"- Configs: {', '.join(CONFIGS.keys())}\n")
@@ -248,7 +249,9 @@ def main():
     output_path = args.output or os.path.join(
         "docs",
         "results",
-        "spike_stats",
+        "baseline",
+        "spike_statistics",
+        args.dataset,
         f"STATS_ABLATION_{args.dataset}.md",
     )
     write_markdown_report(output_path, args, results, layer_results)

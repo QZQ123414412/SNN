@@ -59,7 +59,7 @@ identical weights so their difference isolates the CSRR neuron dynamics.
 ## Metrics and Output
 
 Write an independent report to
-`docs/results/successive_refinement/SR_THREE_WAY_ABLATION_cifar100.md`.
+`docs/results/comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md`.
 Do not overwrite historical reports.
 
 The report must contain, for every configuration and time step:

@@ -59,7 +59,7 @@ materialized calibration samples, test loader, random seed, and metric code.
 ## Metrics and Output
 
 Write a new report to
-`docs/results/ablation/CIFAR10_FIVE_WAY_ABLATION.md`. Do not overwrite any
+`docs/results/comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md`. Do not overwrite any
 existing CIFAR-10, state-FTBC, or successive-refinement report.
 
 For every configuration and time step, report:

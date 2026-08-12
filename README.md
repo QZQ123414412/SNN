@@ -53,8 +53,8 @@ python scripts/experiments/run_state_ftbc_ablation.py -data cifar100 `
 
 状态条件低秩 FTBC 的正式结果位于：
 
-- [最终结论](docs/results/state_ftbc/STATE_LOW_RANK_FTBC_FINAL.md)
-- [完整 CIFAR-100/VGG16 数据](docs/results/state_ftbc/STATE_LOW_RANK_FTBC_cifar100_full.md)
+- [最终结论](docs/results/state_low_rank_ftbc/final/STATE_LOW_RANK_FTBC_FINAL.md)
+- [完整 CIFAR-100/VGG16 数据](docs/results/state_low_rank_ftbc/final/cifar100/STATE_LOW_RANK_FTBC_cifar100_full.md)
 
 SOPs、脉冲率和稀疏率的定义见 [指标定义](docs/methodology/metric_definitions.md)。
 

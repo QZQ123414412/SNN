@@ -14,7 +14,7 @@
 
 - Modify `tests/test_successive_refinement.py`: specify the five configuration contracts.
 - Modify `scripts/experiments/run_successive_refinement_ablation.py`: register five dedicated rate configurations.
-- Create `docs/results/ablation/CIFAR10_FIVE_WAY_ABLATION.md`: generated aggregate and per-layer results.
+- Create `docs/results/comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md`: generated aggregate and per-layer results.
 
 ### Task 1: Specify the Five Configuration Contracts
 
@@ -130,13 +130,13 @@ git commit -m "feat: add CIFAR-10 five-way ablation configs"
 ### Task 3: Run the CIFAR-10 Experiment
 
 **Files:**
-- Create: `docs/results/ablation/CIFAR10_FIVE_WAY_ABLATION.md`
+- Create: `docs/results/comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md`
 
 - [ ] **Step 1: Execute all 30 combinations**
 
 ```powershell
 $env:QCFS_CIFAR10_ROOT='D:\master_degree_paper\datasets'
-D:\Anaconda\envs\ann2snn\python.exe -u scripts\experiments\run_successive_refinement_ablation.py -data cifar10 -id cifar10-vgg16-example --configs A_QCFS_R0 B_QCFS_SNM_R0 C_QCFS_R0_FULL_FTBC D_QCFS_SNM_R0_FULL_FTBC E_QCFS_SNM_R0_STATE_LR --time_steps 1 2 4 8 16 32 --ratios 1.0 --positive_margins 0.5 --negative_margins 0.5 --over_weight 2.5 --under_weight 1.0 --cali_batches 5 --seed 42 --output docs/results/ablation/CIFAR10_FIVE_WAY_ABLATION.md
+D:\Anaconda\envs\ann2snn\python.exe -u scripts\experiments\run_successive_refinement_ablation.py -data cifar10 -id cifar10-vgg16-example --configs A_QCFS_R0 B_QCFS_SNM_R0 C_QCFS_R0_FULL_FTBC D_QCFS_SNM_R0_FULL_FTBC E_QCFS_SNM_R0_STATE_LR --time_steps 1 2 4 8 16 32 --ratios 1.0 --positive_margins 0.5 --negative_margins 0.5 --over_weight 2.5 --under_weight 1.0 --cali_batches 5 --seed 42 --output docs/results/comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md
 ```
 
 Expected: 30 completed summaries and exit code 0.
@@ -148,14 +148,14 @@ Confirm all five names and all six time-step columns appear. Confirm the ten agg
 - [ ] **Step 3: Commit the report**
 
 ```powershell
-git add docs/results/ablation/CIFAR10_FIVE_WAY_ABLATION.md
+git add docs/results/comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md
 git commit -m "results: record CIFAR-10 five-way ablation"
 ```
 
 ### Task 4: Final Verification and Summary
 
 **Files:**
-- Verify: `docs/results/ablation/CIFAR10_FIVE_WAY_ABLATION.md`
+- Verify: `docs/results/comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md`
 
 - [ ] **Step 1: Re-run the complete test suite**
 

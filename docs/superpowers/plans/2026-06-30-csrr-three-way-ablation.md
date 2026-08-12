@@ -14,7 +14,7 @@
 
 - Modify `tests/test_successive_refinement.py`: specify the two controlled rate configurations.
 - Modify `scripts/experiments/run_successive_refinement_ablation.py`: register full-FTBC and matched state-low-rank configurations.
-- Create `docs/results/successive_refinement/SR_THREE_WAY_ABLATION_cifar100.md`: generated aggregate and per-layer metrics.
+- Create `docs/results/comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md`: generated aggregate and per-layer metrics.
 
 ### Task 1: Specify Controlled Configuration Semantics
 
@@ -136,12 +136,12 @@ git commit -m "feat: add controlled CSRR three-way ablation configs"
 ### Task 3: Run the CIFAR-100 Three-Way Ablation
 
 **Files:**
-- Create: `docs/results/successive_refinement/SR_THREE_WAY_ABLATION_cifar100.md`
+- Create: `docs/results/comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md`
 
 - [ ] **Step 1: Run all three configurations and six time steps**
 
 ```powershell
-D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_successive_refinement_ablation.py -data cifar100 -id cifar100-vgg16-l8-example --configs F_RATE_FULL_FTBC H_RATE_STATE_LR_MATCHED M_SR_GEOM_STATE_LR --time_steps 1 2 4 8 16 32 --ratios 1.0 --positive_margins 0.55 --negative_margins 1.3 --over_weight 2.5 --under_weight 1.0 --cali_batches 5 --seed 42 --output docs/results/successive_refinement/SR_THREE_WAY_ABLATION_cifar100.md
+D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_successive_refinement_ablation.py -data cifar100 -id cifar100-vgg16-l8-example --configs F_RATE_FULL_FTBC H_RATE_STATE_LR_MATCHED M_SR_GEOM_STATE_LR --time_steps 1 2 4 8 16 32 --ratios 1.0 --positive_margins 0.55 --negative_margins 1.3 --over_weight 2.5 --under_weight 1.0 --cali_batches 5 --seed 42 --output docs/results/comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md
 ```
 
 Expected: 18 completed summaries and exit code 0. The M configuration expands to `M_SR_GEOM_STATE_LR_R1_P0.55_N1.3`.
@@ -153,14 +153,14 @@ Confirm the report contains all three names, six time-step columns, ten aggregat
 - [ ] **Step 3: Commit the generated report**
 
 ```powershell
-git add docs/results/successive_refinement/SR_THREE_WAY_ABLATION_cifar100.md
+git add docs/results/comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md
 git commit -m "results: record controlled CSRR three-way ablation"
 ```
 
 ### Task 4: Final Verification and Interpretation
 
 **Files:**
-- Verify: `docs/results/successive_refinement/SR_THREE_WAY_ABLATION_cifar100.md`
+- Verify: `docs/results/comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md`
 
 - [ ] **Step 1: Re-run the complete test suite**
 

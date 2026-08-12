@@ -165,9 +165,12 @@ def main():
     md_path = os.path.join(
         "docs",
         "results",
-        "regular",
+        "baseline",
+        "accuracy_only",
+        args.dataset,
         f"ABLATION_RESULTS_{args.dataset}{args.output_suffix}.md",
     )
+    Path(md_path).parent.mkdir(parents=True, exist_ok=True)
     with open(md_path, "w") as f:
         f.write(f"# Ablation Study: SNM++ + FTBC on {args.dataset.upper()} / VGG16\n\n")
         f.write(f"- Calibration: alpha={args.alpha}, batches={args.cali_batches}\n")

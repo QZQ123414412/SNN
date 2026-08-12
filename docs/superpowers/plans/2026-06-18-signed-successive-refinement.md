@@ -286,8 +286,8 @@ Expected: all tests pass and all Python files compile.
 ### Task 7: CIFAR-100/VGG16 Feasibility and Full Ablation
 
 **Files:**
-- Create: `docs/results/successive_refinement/SR_FEASIBILITY_cifar100_T2_T4.md`
-- Create: `docs/results/successive_refinement/SR_ABLATION_cifar100.md`
+- Create: `docs/results/csrr/diagnostics/cifar100/SR_FEASIBILITY_cifar100_T2_T4.md`
+- Create: `docs/results/csrr/final/cifar100/SR_ABLATION_cifar100.md`
 
 - [ ] **Step 1: Run `T=2/4` screening**
 
@@ -297,7 +297,7 @@ Compare rate, uniform refinement, mild geometric ratios and binary ratio. Use th
 D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_successive_refinement_ablation.py `
   -data cifar100 -id cifar100-vgg16-l8-example -dev 0 `
   --time_steps 2 4 --ratios 1.05 1.10 1.25 1.50 2.00 `
-  --output docs/results/successive_refinement/SR_FEASIBILITY_cifar100_T2_T4.md
+  --output docs/results/csrr/diagnostics/cifar100/SR_FEASIBILITY_cifar100_T2_T4.md
 ```
 
 - [ ] **Step 2: Select the schedule by Pareto rule**

@@ -44,15 +44,15 @@
 
 **Files:**
 - Move methodology documents to `docs/methodology/`.
-- Move regular results to `docs/results/regular/`.
-- Move spike-statistics results to `docs/results/spike_stats/`.
-- Move final state-FTBC results to `docs/results/state_ftbc/`.
-- Move smoke, validation, optimization, and failed-attempt reports to `docs/archive/state_ftbc/`.
+- Move accuracy-only results to `docs/results/baseline/accuracy_only/`.
+- Move spike-statistics results to `docs/results/baseline/spike_statistics/`.
+- Move final state-FTBC results to `docs/results/state_low_rank_ftbc/`.
+- Move smoke, validation, optimization, and failed-attempt reports to `docs/archive/experiments/state_low_rank_ftbc/`.
 - Move project design/history documents to `docs/design/` or `docs/archive/project_history/`.
 
 - [ ] Preserve every Markdown file; do not delete historical results.
 - [ ] Keep `STATE_LOW_RANK_FTBC_FINAL.md` and the full CIFAR-100 report together under formal results.
-- [ ] Place `STATE_LOW_RANK_FTBC_addcmul_T4.md` under `docs/archive/state_ftbc/failed_attempts/`.
+- [ ] Place `STATE_LOW_RANK_FTBC_addcmul_T4.md` under `docs/archive/experiments/state_low_rank_ftbc/failed_attempts/cifar100/`.
 
 ### Task 4: Organize figures and update output paths
 

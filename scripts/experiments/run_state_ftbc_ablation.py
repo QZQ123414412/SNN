@@ -155,6 +155,7 @@ def format_pct(value):
 
 
 def write_report(path, args, selected_configs, results, layer_results):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as report:
         report.write("# State-conditioned Low-rank FTBC Ablation\n\n")
         report.write(f"- Dataset: {args.dataset}\n")
@@ -251,7 +252,10 @@ def main():
     parser.add_argument("--configs", nargs="+", choices=CONFIGS.keys(), default=list(CONFIGS.keys()))
     parser.add_argument(
         "--output",
-        default="docs/results/state_ftbc/STATE_LOW_RANK_FTBC_cifar100.md",
+        default=(
+            "docs/results/state_low_rank_ftbc/final/cifar100/"
+            "STATE_LOW_RANK_FTBC_cifar100.md"
+        ),
     )
     args = parser.parse_args()
 

@@ -25,7 +25,7 @@ python scripts/experiments/run_stats_ablation.py -data cifar100 `
 默认结果保存到：
 
 ```text
-docs/results/spike_stats/STATS_ABLATION_cifar100.md
+docs/results/baseline/spike_statistics/cifar100/STATS_ABLATION_cifar100.md
 ```
 
 ## 状态条件低秩 FTBC

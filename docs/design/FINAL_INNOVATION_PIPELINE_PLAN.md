@@ -237,7 +237,7 @@ w_t proportional to ratio^(-t)
 
 实验表明 `ratio>1` 虽可提高部分低时间步准确率，但会显著增加负脉冲、SOPs 和尺度操作。因此最终取 `ratio=1.0`，即所有时间尺度恒为 1，ScaleOps 为零。几何时间权重仅作为失败消融保留。
 
-最终方法在 CIFAR-10/100 上均取得 Accuracy-SOPs-sparsity 改善，完整结果见 `docs/results/successive_refinement/SR_FINAL_ANALYSIS.md`。
+最终方法在 CIFAR-10/100 上均取得 Accuracy-SOPs-sparsity 改善，完整结果见 `docs/results/csrr/analysis/SR_FINAL_ANALYSIS.md`。
 
 ---
 

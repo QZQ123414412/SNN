@@ -125,7 +125,7 @@ D:\Anaconda\envs\ann2snn\python.exe `
   --time_steps 1 2 4 8 16 32 `
   --configs C_RATE_SNM_R0 H_RATE_STATE_LR `
             L_SR_GEOM_SNM_R0 M_SR_GEOM_STATE_LR `
-  --output docs\results\successive_refinement\SR_ABLATION_cifar100.md
+  --output docs\results\csrr\final\cifar100\SR_ABLATION_cifar100.md
 ```
 
 脚本默认值就是最终固定配置：

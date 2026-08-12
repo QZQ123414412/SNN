@@ -596,7 +596,7 @@ def main():
     parser.add_argument(
         "--output",
         default=(
-            "docs/results/successive_refinement/"
+            "docs/results/csrr/final/cifar100/"
             "SR_ABLATION_cifar100.md"
         ),
     )

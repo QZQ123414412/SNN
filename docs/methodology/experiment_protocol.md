@@ -56,7 +56,7 @@ D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_stats_ablation.py `
   -dev=0 `
   --time_steps 1 2 4 8 16 32 `
   --cali_batches 5 `
-  --output docs\results\spike_stats\STATS_ABLATION_cifar100.md
+  --output docs\results\baseline\spike_statistics\cifar100\STATS_ABLATION_cifar100.md
 ```
 
 其中：
@@ -83,7 +83,7 @@ D:\Anaconda\envs\ann2snn\python.exe scripts\experiments\run_stats_ablation.py `
   -dev=0 `
   --time_steps 32 `
   --cali_batches 5 `
-  --output docs\results\spike_stats\STATS_ABLATION_cifar100_T32.md
+  --output docs\results\baseline\spike_statistics\cifar100\STATS_ABLATION_cifar100_T32.md
 ```
 
 后续可以进一步改进脚本，让它在每完成一个 `(config, T)` 后立即写入 CSV，这样即使实验被中断也不会丢失已有结果。
