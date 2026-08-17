@@ -8,7 +8,7 @@ ANN activation at each layer, then stores the bias inside SignedIF.time_based_bi
 import sys
 import torch
 import torch.nn as nn
-from models.layer import SignedIF
+from models.layer import IF, SignedIF
 
 
 def reshape_channel_bias(channel_bias, reference):
@@ -22,6 +22,29 @@ def reshape_channel_bias(channel_bias, reference):
     raise ValueError(
         f"Unsupported activation rank {reference.dim()} for channel-level FTBC bias"
     )
+
+
+def match_calibration_layers(ann, snn):
+    """Match ANN and SNN activation layers by their stable module names."""
+    ann_modules = dict(ann.named_modules())
+    pairs = []
+    for name, module_snn in snn.named_modules():
+        if not isinstance(module_snn, SignedIF):
+            continue
+        if name not in ann_modules:
+            raise RuntimeError(
+                f"SNN activation {name!r} has no same-named ANN layer"
+            )
+        module_ann = ann_modules[name]
+        if not isinstance(module_ann, (IF, SignedIF)):
+            raise RuntimeError(
+                f"ANN layer {name!r} is {type(module_ann).__name__}, "
+                "expected IF or SignedIF"
+            )
+        pairs.append((name, module_ann, module_snn))
+    if not pairs:
+        raise RuntimeError("No SignedIF layers found for FTBC calibration")
+    return pairs
 
 
 def accumulate_state_low_rank_statistics(target, state, tau, weight=None):
@@ -401,26 +424,24 @@ def bias_corr_model(ann, snn, T, train_loader,
               flush=True)
         inputs = inputs.to(device)
 
-        for (name_a, mod_a), (name_s, mod_s) in zip(
-                ann.named_modules(), snn.named_modules()):
-            if isinstance(mod_s, SignedIF):
-                if ftbc_mode == "state_low_rank":
-                    state_low_rank_corr_step_by_step(
-                        ann,
-                        mod_a,
-                        snn,
-                        mod_s,
-                        T,
-                        inputs,
-                        curr_t_alpha=curr_t_alpha,
-                        ridge=ridge,
-                        over_weight=over_weight,
-                        under_weight=under_weight,
-                        coefficient_clip=coefficient_clip,
-                    )
-                else:
-                    bias_corr_step_by_step(
-                        ann, mod_a, snn, mod_s, T, inputs,
-                        curr_t_alpha=curr_t_alpha)
+        for _, mod_a, mod_s in match_calibration_layers(ann, snn):
+            if ftbc_mode == "state_low_rank":
+                state_low_rank_corr_step_by_step(
+                    ann,
+                    mod_a,
+                    snn,
+                    mod_s,
+                    T,
+                    inputs,
+                    curr_t_alpha=curr_t_alpha,
+                    ridge=ridge,
+                    over_weight=over_weight,
+                    under_weight=under_weight,
+                    coefficient_clip=coefficient_clip,
+                )
+            else:
+                bias_corr_step_by_step(
+                    ann, mod_a, snn, mod_s, T, inputs,
+                    curr_t_alpha=curr_t_alpha)
 
     print("  FTBC calibration done.", flush=True)

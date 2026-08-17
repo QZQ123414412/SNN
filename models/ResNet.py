@@ -3,7 +3,6 @@
     Deep Residual Learning for Image Recognition
     https://arxiv.org/abs/1512.03385v1
 """
-from matplotlib.pyplot import xlim
 import torch.nn as nn
 from models.layer import *
 
@@ -17,14 +16,14 @@ class BasicBlock(nn.Module):
     #to distinct
     expansion = 1
 
-    def __init__(self, in_channels, out_channels, stride=1):
+    def __init__(self, in_channels, out_channels, stride=1, neuron_type=IF):
         super().__init__()
 
         #residual function
         self.residual_function = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
-            IF(),
+            neuron_type(),
             nn.Conv2d(out_channels, out_channels * BasicBlock.expansion, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_channels * BasicBlock.expansion)
         )
@@ -36,7 +35,7 @@ class BasicBlock(nn.Module):
                 nn.Conv2d(in_channels, out_channels * BasicBlock.expansion, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels * BasicBlock.expansion)
             )
-        self.act = IF()
+        self.act = neuron_type()
 
     def forward(self, x):
         x = self.residual_function(x) + self.shortcut(x)
@@ -88,6 +87,11 @@ class ResNet(nn.Module):
                 module.L = L
         return
 
+    def set_qcfs_training_profile(self, profile):
+        for module in self.modules():
+            if isinstance(module, IF):
+                module.set_quantization_profile(profile)
+
     def forward(self, x):
         if self.T > 0:
             x = add_dimention(x, self.T)
@@ -105,16 +109,17 @@ class ResNet(nn.Module):
         return output
 
 class ResNet4Cifar(nn.Module):
-    def __init__(self, block, num_block, num_classes=10):
+    def __init__(self, block, num_block, num_classes=10, neuron_type=IF):
         super().__init__()
         self.in_channels = 16
+        self.neuron_type = neuron_type
         self.T = 0
         self.merge = MergeTemporalDim(0)
         self.expand = ExpandTemporalDim(0)
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(16),
-            IF())
+            neuron_type())
         # we use a different inputsize than the original paper
         # so conv2_x's stride is 1
         self.conv2_x = self._make_layer(block, 16, num_block[0], 1)
@@ -127,17 +132,27 @@ class ResNet4Cifar(nn.Module):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
-            layers.append(block(self.in_channels, out_channels, stride))
+            layers.append(
+                block(
+                    self.in_channels,
+                    out_channels,
+                    stride,
+                    neuron_type=self.neuron_type,
+                )
+            )
             self.in_channels = out_channels * block.expansion
         return nn.Sequential(*layers)
 
     def set_T(self, T):
         self.T = T
         for module in self.modules():
-            if isinstance(module, (IF, ExpandTemporalDim)):
+            if isinstance(module, (IF, SignedIF, ExpandTemporalDim)):
                 module.T = T
-            if isinstance(module, IF):
-                print(module.thresh)
+            if isinstance(module, SignedIF):
+                module.init_mem()
+                module.time_scales = None
+                module._time_scale_cache_key = None
+                module.reset_stats()
         return
 
     def set_L(self, L):
@@ -145,6 +160,56 @@ class ResNet4Cifar(nn.Module):
             if isinstance(module, IF):
                 module.L = L
         return
+
+    def set_qcfs_training_profile(self, profile):
+        for module in self.modules():
+            if isinstance(module, IF):
+                module.set_quantization_profile(profile)
+
+    def set_signed(self, enabled):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.enable_signed = bool(enabled)
+
+    def set_r0(self, enabled):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.enable_r0 = bool(enabled)
+
+    def set_ftbc_mode(self, mode):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_ftbc_mode(mode)
+
+    def set_state_bias_enabled(self, enabled):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_state_bias_enabled(enabled)
+
+    def set_coding_mode(
+        self,
+        mode,
+        schedule="rate",
+        ratio=1.0,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="legacy_clamp",
+    ):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_coding_mode(
+                    mode,
+                    schedule=schedule,
+                    ratio=ratio,
+                    positive_margin=positive_margin,
+                    negative_margin=negative_margin,
+                    r0_mode=r0_mode,
+                )
+
+    def reset_all_bias(self):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.reset_bias()
 
     def forward(self, x):
         if self.T > 0:
@@ -166,6 +231,15 @@ def resnet18(num_classes=10):
     
 def resnet20(num_classes=10):
     return ResNet4Cifar(BasicBlock, [3, 3, 3], num_classes=num_classes)
+
+
+def resnet20_signed(num_classes=10):
+    return ResNet4Cifar(
+        BasicBlock,
+        [3, 3, 3],
+        num_classes=num_classes,
+        neuron_type=SignedIF,
+    )
 
 def resnet34(num_classes=10):
     return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes)

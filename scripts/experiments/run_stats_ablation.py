@@ -74,9 +74,10 @@ def load_signed_model(args, device):
 
 
 def summarize_layer_stats(layer_stats):
-    total_pos = sum(item.positive_spikes for item in layer_stats)
-    total_neg = sum(item.negative_spikes for item in layer_stats)
-    total_obs = sum(item.total_observations for item in layer_stats)
+    spike_layers = [item for item in layer_stats if item.has_spike_output]
+    total_pos = sum(item.positive_spikes for item in spike_layers)
+    total_neg = sum(item.negative_spikes for item in spike_layers)
+    total_obs = sum(item.total_observations for item in spike_layers)
     total_sops = sum(item.sops for item in layer_stats)
     total_scale_operations = sum(item.scale_operations for item in layer_stats)
     total_spikes = total_pos + total_neg

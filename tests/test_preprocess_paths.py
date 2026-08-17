@@ -4,10 +4,40 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from preprocess.getdataloader import resolve_dataset_root, resolve_num_workers
+from preprocess.augment import CIFAR10Policy, Cutout
+from preprocess.getdataloader import (
+    cifar100_train_transform,
+    resolve_dataset_root,
+    resolve_num_workers,
+)
 
 
 class DatasetRootResolutionTest(unittest.TestCase):
+    def test_cifar100_augmentation_profiles_differ_only_by_autoaugment(self):
+        fixed = cifar100_train_transform("fixed_repo").transforms
+        paper_era = cifar100_train_transform("paper_era").transforms
+
+        self.assertTrue(any(isinstance(item, CIFAR10Policy) for item in fixed))
+        self.assertFalse(
+            any(isinstance(item, CIFAR10Policy) for item in paper_era)
+        )
+        self.assertEqual(
+            [type(item) for item in fixed if not isinstance(item, CIFAR10Policy)],
+            [type(item) for item in paper_era],
+        )
+
+    def test_cifar100_cutout_length_is_explicit_without_changing_default(self):
+        default = cifar100_train_transform("fixed_repo").transforms
+        paper_reproduction = cifar100_train_transform(
+            "fixed_repo", cutout_length=8
+        ).transforms
+        default_cutout = next(item for item in default if isinstance(item, Cutout))
+        paper_cutout = next(
+            item for item in paper_reproduction if isinstance(item, Cutout)
+        )
+        self.assertEqual(default_cutout.length, 16)
+        self.assertEqual(paper_cutout.length, 8)
+
     def test_dataset_specific_environment_variable_has_priority(self):
         with patch.dict(
             os.environ,

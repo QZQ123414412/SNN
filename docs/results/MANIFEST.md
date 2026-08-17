@@ -36,6 +36,8 @@
 |---|---|---|---|---|
 | `comparative_ablation/cifar10/CIFAR10_FIVE_WAY_ABLATION.md` | CIFAR-10/VGG16 五组严格对照：QCFS、QCFS+SNM、QCFS+FTBC、QCFS+SNM+完整 FTBC、QCFS+SNM+state-low-rank FTBC；全部启用 R0，T=1/2/4/8/16/32 | `scripts/experiments/run_successive_refinement_ablation.py` | 直接 | 最新正式结果 |
 | `comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md` | CIFAR-100/VGG16 三组严格对照：完整 FTBC、匹配权重的 state-low-rank FTBC、state-low-rank FTBC+CSRR，T=1/2/4/8/16/32 | `scripts/experiments/run_successive_refinement_ablation.py` | 直接 | 最新正式结果 |
+| `comparative_ablation/cifar100/RESNET20_SIX_WAY_ABLATION.md` | CIFAR-100/ResNet20，使用训练日志 68.78% 的 QCFS-L8 权重；SNM 开/关与 FTBC none/full/state-low-rank 的 2×3 严格对照，全部启用 R0、禁用 CSRR，T=1/2/4/8/16/32 | `scripts/experiments/run_resnet20_qcfs_ablation.py` | 直接 | 最新正式结果 |
+| `comparative_ablation/cifar100/RESNET20_STATE_LR_CAUSAL_DIAGNOSTICS.md` | 对 ResNet20 的 SNM×state-low-rank 异常做三项因果诊断：复用 E 系数开启 SNM、关闭 `bias_state`、五批校准后全局裁剪；T=4/8/16/32 | `scripts/experiments/run_resnet20_state_lr_causal_diagnostics.py` | 直接 | 最新正式诊断 |
 
 ## State-conditioned Low-rank FTBC
 
@@ -89,6 +91,8 @@
 
 | 文件 | 内容 | 状态 |
 |---|---|---|
+| `../archive/experiments/resnet20/DISTILL_QCFS_FINETUNE_DIAGNOSTIC.md` | CIFAR-100/ResNet20 QCFS 68.78% 权重的两条独立 100-epoch ResNet56/DIST 蒸馏微调轨迹 | 已完成诊断；最高 68.66%，未达到 69.94%，拒绝作为正式基线 |
+| `../archive/experiments/resnet20/FIXED_BUDGET_FINETUNE_DIAGNOSTIC.md` | CIFAR-100/ResNet20 QCFS 68.78% 权重的三条独立 50-epoch 微调轨迹，初始 LR 为 0.005/0.002/0.001 | 已完成诊断；最高 68.69%，未达到 69.94%，拒绝作为正式基线 |
 | `../archive/experiments/state_low_rank_ftbc/smoke/cifar100/STATE_LOW_RANK_FTBC_smoke_T4.md` | 单校准批次 T=4 冒烟 | 归档 |
 | `../archive/experiments/state_low_rank_ftbc/smoke/cifar100/STATE_LOW_RANK_FTBC_validation_T4_T8.md` | T=4/8 初步验证 | 归档 |
 | `../archive/experiments/state_low_rank_ftbc/implementation_validation/cifar100/STATE_LOW_RANK_FTBC_optimized_T4.md` | 优化实现 T=4 验证 | 归档 |

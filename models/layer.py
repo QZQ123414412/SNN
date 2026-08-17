@@ -50,7 +50,15 @@ class GradFloor(torch.autograd.Function):
 myfloor = GradFloor.apply
 
 class IF(nn.Module):
-    def __init__(self, T=0, L=8, thresh=8.0, tau=1., gama=1.0):
+    def __init__(
+        self,
+        T=0,
+        L=8,
+        thresh=8.0,
+        tau=1.,
+        gama=1.0,
+        quantization_profile="fixed_repo",
+    ):
         super(IF, self).__init__()
         self.act = ZIF.apply
         self.thresh = nn.Parameter(torch.tensor([thresh]), requires_grad=True)
@@ -61,6 +69,14 @@ class IF(nn.Module):
         self.L = L
         self.T = T
         self.loss = 0
+        self.set_quantization_profile(quantization_profile)
+
+    def set_quantization_profile(self, profile):
+        if profile not in {"fixed_repo", "paper_era"}:
+            raise ValueError(
+                "quantization_profile must be 'fixed_repo' or 'paper_era'"
+            )
+        self.quantization_profile = profile
 
     def forward(self, x):
         if self.T > 0:
@@ -77,13 +93,17 @@ class IF(nn.Module):
             x = self.merge(x)
         else:
             x = x / self.thresh
-            x = torch.clamp(x, 0, 1)
-            x = myfloor(x*self.L+0.5)/self.L
+            if self.quantization_profile == "fixed_repo":
+                x = torch.clamp(x, 0, 1)
+                x = myfloor(x*self.L+0.5)/self.L
+            else:
+                x = myfloor(x*self.L+0.5)/self.L
+                x = torch.clamp(x, 0, 1)
             x = x * self.thresh
         return x
 
 def add_dimention(x, T):
-    x.unsqueeze_(1)
+    x = x.unsqueeze(1)
     x = x.repeat(T, 1, 1, 1, 1)
     return x
 
@@ -106,6 +126,7 @@ class SignedIF(nn.Module):
         self.bias_base = None
         self.bias_slope = None
         self.bias_state = None
+        self.enable_state_bias = True
         self.coding_mode = "rate"
         self.refinement_schedule = "geometric"
         self.refinement_ratio = 2.0
@@ -295,6 +316,10 @@ class SignedIF(nn.Module):
             self.reset_bias()
         self.ftbc_mode = mode
 
+    def set_state_bias_enabled(self, enabled):
+        """Enable or disable the state-conditioned term of low-rank FTBC."""
+        self.enable_state_bias = bool(enabled)
+
     def _init_ftbc_bias(self, channels, device):
         if self.ftbc_mode == "full":
             if self.time_based_bias is None:
@@ -328,7 +353,7 @@ class SignedIF(nn.Module):
         base = self._reshape_channel_bias(self.bias_base, reference)
         slope = self._reshape_channel_bias(self.bias_slope, reference)
         state_bias = self._reshape_channel_bias(self.bias_state, reference)
-        if transmitted is None:
+        if transmitted is None or not self.enable_state_bias:
             state_term = torch.zeros_like(reference)
         else:
             state = transmitted if transmitted.dtype == torch.bool else transmitted > 0
@@ -342,7 +367,9 @@ class SignedIF(nn.Module):
                 return 0
             return sum(item.numel() for item in self.time_based_bias)
         if self.ftbc_mode == "state_low_rank":
-            tensors = (self.bias_base, self.bias_slope, self.bias_state)
+            tensors = [self.bias_base, self.bias_slope]
+            if self.enable_state_bias:
+                tensors.append(self.bias_state)
             return sum(item.numel() for item in tensors if item is not None)
         return 0
 
@@ -354,7 +381,9 @@ class SignedIF(nn.Module):
                 item.numel() * item.element_size() for item in self.time_based_bias
             )
         if self.ftbc_mode == "state_low_rank":
-            tensors = (self.bias_base, self.bias_slope, self.bias_state)
+            tensors = [self.bias_base, self.bias_slope]
+            if self.enable_state_bias:
+                tensors.append(self.bias_state)
             return sum(
                 item.numel() * item.element_size()
                 for item in tensors

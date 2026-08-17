@@ -8,10 +8,12 @@ from models.layer import SignedIF
 from scripts.experiments.run_stats_ablation import summarize_layer_stats
 from spike_stats import (
     SpikeLayerStats,
+    collect_resnet20_spike_stats,
     estimate_conv2d_fanout,
     estimate_linear_fanout,
     set_signed_spike_stats_enabled,
 )
+from models import modelpool
 
 
 class SpikeStatsTest(unittest.TestCase):
@@ -115,6 +117,35 @@ class SpikeStatsTest(unittest.TestCase):
 
         self.assertEqual(summary["sops"], 50)
         self.assertEqual(summary["scale_operations"], 50)
+
+    def test_resnet_projection_shortcut_sops_are_counted_separately(self):
+        model = modelpool("resnet20_signed", "cifar100")
+        model.set_T(2)
+        for module in model.modules():
+            if isinstance(module, SignedIF):
+                module.pos_spike_count = 1
+                module.neg_spike_count = 0
+                module.total_neurons = 2
+                module.pos_spike_count_by_time = [1, 0]
+                module.neg_spike_count_by_time = [0, 0]
+
+        stats = collect_resnet20_spike_stats(model, SignedIF, nn.Conv2d)
+        by_name = {item.name: item for item in stats}
+
+        self.assertEqual(len(stats), 20)
+        self.assertEqual(
+            by_name["conv3_x.0.residual_function.2"].sops,
+            32 * 3 * 3,
+        )
+        self.assertEqual(
+            by_name["conv3_x.0.act"].sops,
+            32 * 3 * 3 + 32,
+        )
+        self.assertEqual(by_name["conv3_x.0.act"].total_input_spikes, 2)
+        self.assertEqual(by_name["fc"].sops, 100)
+        self.assertFalse(by_name["fc"].has_spike_output)
+        summary = summarize_layer_stats(stats)
+        self.assertEqual(summary["positive_spikes"], 19)
 
 
 if __name__ == "__main__":

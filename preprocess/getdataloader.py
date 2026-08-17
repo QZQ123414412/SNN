@@ -77,14 +77,42 @@ def GetCifar10(batchsize, attack=False):
     )
     return train_dataloader, test_dataloader
 
-def GetCifar100(batchsize):
-    trans_t = transforms.Compose([transforms.RandomCrop(32, padding=4),
-                                  transforms.RandomHorizontalFlip(),
-                                  CIFAR10Policy(),
-                                  transforms.ToTensor(),
-                                  transforms.Normalize(mean=[n/255. for n in [129.3, 124.1, 112.4]], std=[n/255. for n in [68.2,  65.4,  70.4]]),
-                                  Cutout(n_holes=1, length=16)
-                                  ])
+def cifar100_train_transform(
+    augmentation_profile="fixed_repo",
+    cutout_length=16,
+):
+    if augmentation_profile not in {"fixed_repo", "paper_era"}:
+        raise ValueError(
+            "augmentation_profile must be 'fixed_repo' or 'paper_era'"
+        )
+    augmentations = [
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+    ]
+    if augmentation_profile == "fixed_repo":
+        augmentations.append(CIFAR10Policy())
+    augmentations.extend(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[n / 255. for n in [129.3, 124.1, 112.4]],
+                std=[n / 255. for n in [68.2, 65.4, 70.4]],
+            ),
+            Cutout(n_holes=1, length=cutout_length),
+        ]
+    )
+    return transforms.Compose(augmentations)
+
+
+def GetCifar100(
+    batchsize,
+    augmentation_profile="fixed_repo",
+    cutout_length=16,
+):
+    trans_t = cifar100_train_transform(
+        augmentation_profile,
+        cutout_length=cutout_length,
+    )
     trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[n/255. for n in [129.3, 124.1, 112.4]], std=[n/255. for n in [68.2,  65.4,  70.4]])])
     root = resolve_dataset_root("CIFAR100")
     train_data = datasets.CIFAR100(root, train=True, transform=trans_t, download=True)

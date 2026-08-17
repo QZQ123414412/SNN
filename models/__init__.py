@@ -22,6 +22,8 @@ def modelpool(MODELNAME, DATANAME):
         return resnet34(num_classes=num_classes)
     elif MODELNAME.lower() == 'resnet20':
         return resnet20(num_classes=num_classes)
+    elif MODELNAME.lower() == 'resnet20_signed':
+        return resnet20_signed(num_classes=num_classes)
     else:
         print("still not support this model")
         exit(0)

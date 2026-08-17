@@ -20,14 +20,14 @@ def seed_all(seed=1029):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-def get_logger(filename, verbosity=1, name=None):
+def get_logger(filename, verbosity=1, name=None, filemode="w"):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
     formatter = logging.Formatter(
         "[%(asctime)s][%(filename)s][line:%(lineno)d][%(levelname)s] %(message)s"
     )
     logger = logging.getLogger(name)
     logger.setLevel(level_dict[verbosity])
-    fh = logging.FileHandler(filename, "w")
+    fh = logging.FileHandler(filename, filemode)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     sh = logging.StreamHandler()

@@ -34,9 +34,13 @@ class SpikeLayerStats:
     synaptic_ops_per_input_spike: int = 0
     input_spikes_by_time: tuple = ()
     time_scales: tuple = ()
+    synaptic_ops_override: int = None
+    has_spike_output: bool = True
 
     @property
     def total_observations(self):
+        if not self.has_spike_output:
+            return 0
         return max(int(self.time_steps) * int(self.output_neurons_per_step), 1)
 
     @property
@@ -49,22 +53,26 @@ class SpikeLayerStats:
 
     @property
     def positive_spike_rate(self):
-        return self.positive_spikes / self.total_observations
+        return self.positive_spikes / max(self.total_observations, 1)
 
     @property
     def negative_spike_rate(self):
-        return self.negative_spikes / self.total_observations
+        return self.negative_spikes / max(self.total_observations, 1)
 
     @property
     def total_spike_rate(self):
-        return self.total_spikes / self.total_observations
+        return self.total_spikes / max(self.total_observations, 1)
 
     @property
     def spike_sparsity(self):
+        if not self.has_spike_output:
+            return 0.0
         return 1.0 - self.total_spike_rate
 
     @property
     def sops(self):
+        if self.synaptic_ops_override is not None:
+            return int(self.synaptic_ops_override)
         return int(self.total_input_spikes * self.synaptic_ops_per_input_spike)
 
     @property
@@ -195,6 +203,178 @@ def collect_signed_spike_stats(model, signed_if_type, conv2d_type, linear_type):
     return stats
 
 
+def collect_resnet20_spike_stats(
+    model,
+    signed_if_type,
+    conv2d_type,
+):
+    """Collect activation statistics and graph-aware SOPs for CIFAR ResNet20."""
+    named_modules = dict(model.named_modules())
+    signed_modules = {
+        name: module
+        for name, module in model.named_modules()
+        if isinstance(module, signed_if_type)
+    }
+
+    expected_names = ["conv1.2"]
+    for stage_name in ("conv2_x", "conv3_x", "conv4_x"):
+        stage = getattr(model, stage_name)
+        for block_index in range(len(stage)):
+            prefix = f"{stage_name}.{block_index}"
+            expected_names.extend(
+                [f"{prefix}.residual_function.2", f"{prefix}.act"]
+            )
+    if set(signed_modules) != set(expected_names):
+        missing = sorted(set(expected_names) - set(signed_modules))
+        unexpected = sorted(set(signed_modules) - set(expected_names))
+        raise RuntimeError(
+            "ResNet20 SignedIF topology mismatch: "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+
+    def counts(module):
+        pos = int(module.pos_spike_count)
+        neg = int(module.neg_spike_count)
+        pos_by_time = tuple(int(value) for value in module.pos_spike_count_by_time)
+        neg_by_time = tuple(int(value) for value in module.neg_spike_count_by_time)
+        events_by_time = tuple(
+            pos_value + neg_value
+            for pos_value, neg_value in zip(pos_by_time, neg_by_time)
+        )
+        return pos, neg, events_by_time
+
+    def make_stats(
+        name,
+        input_sources=(),
+        fanouts=(),
+        kind="Conv2d",
+    ):
+        module = signed_modules[name]
+        positive, negative, _ = counts(module)
+        input_positive = 0
+        input_negative = 0
+        input_by_time = None
+        synaptic_ops = 0
+        for source_name, fanout in zip(input_sources, fanouts):
+            source_positive, source_negative, source_by_time = counts(
+                signed_modules[source_name]
+            )
+            input_positive += source_positive
+            input_negative += source_negative
+            synaptic_ops += (source_positive + source_negative) * fanout
+            if input_by_time is None:
+                input_by_time = [0 for _ in source_by_time]
+            input_by_time = [
+                current + source
+                for current, source in zip(input_by_time, source_by_time)
+            ]
+        time_steps = max(int(module.T), 1)
+        if input_by_time is None:
+            input_by_time = [0 for _ in range(time_steps)]
+        total_neurons = int(module.total_neurons)
+        return SpikeLayerStats(
+            name=name,
+            kind=kind,
+            time_steps=time_steps,
+            output_neurons_per_step=max(total_neurons // time_steps, 1),
+            positive_spikes=positive,
+            negative_spikes=negative,
+            input_positive_spikes=input_positive,
+            input_negative_spikes=input_negative,
+            input_spikes_by_time=tuple(input_by_time),
+            time_scales=tuple(1.0 for _ in range(time_steps)),
+            synaptic_ops_override=synaptic_ops,
+        )
+
+    stats = [make_stats("conv1.2")]
+    block_input_name = "conv1.2"
+    for stage_name in ("conv2_x", "conv3_x", "conv4_x"):
+        stage = getattr(model, stage_name)
+        for block_index in range(len(stage)):
+            prefix = f"{stage_name}.{block_index}"
+            internal_name = f"{prefix}.residual_function.2"
+            output_name = f"{prefix}.act"
+
+            first_conv = named_modules[f"{prefix}.residual_function.0"]
+            if not isinstance(first_conv, conv2d_type):
+                raise RuntimeError(f"Expected Conv2d at {prefix}.residual_function.0")
+            first_fanout = estimate_conv2d_fanout(
+                first_conv.in_channels,
+                first_conv.out_channels,
+                first_conv.kernel_size,
+                first_conv.groups,
+            )
+            stats.append(
+                make_stats(
+                    internal_name,
+                    input_sources=(block_input_name,),
+                    fanouts=(first_fanout,),
+                )
+            )
+
+            second_conv = named_modules[f"{prefix}.residual_function.3"]
+            if not isinstance(second_conv, conv2d_type):
+                raise RuntimeError(f"Expected Conv2d at {prefix}.residual_function.3")
+            output_sources = [internal_name]
+            output_fanouts = [
+                estimate_conv2d_fanout(
+                    second_conv.in_channels,
+                    second_conv.out_channels,
+                    second_conv.kernel_size,
+                    second_conv.groups,
+                )
+            ]
+            shortcut_name = f"{prefix}.shortcut.0"
+            shortcut = named_modules.get(shortcut_name)
+            if shortcut is not None:
+                if not isinstance(shortcut, conv2d_type):
+                    raise RuntimeError(f"Expected Conv2d at {shortcut_name}")
+                output_sources.append(block_input_name)
+                output_fanouts.append(
+                    estimate_conv2d_fanout(
+                        shortcut.in_channels,
+                        shortcut.out_channels,
+                        shortcut.kernel_size,
+                        shortcut.groups,
+                    )
+                )
+            stats.append(
+                make_stats(
+                    output_name,
+                    input_sources=tuple(output_sources),
+                    fanouts=tuple(output_fanouts),
+                )
+            )
+            block_input_name = output_name
+    classifier = getattr(model, "fc")
+    source_positive, source_negative, source_by_time = counts(
+        signed_modules[block_input_name]
+    )
+    classifier_fanout = estimate_linear_fanout(
+        classifier.in_features,
+        classifier.out_features,
+    )
+    stats.append(
+        SpikeLayerStats(
+            name="fc",
+            kind="LinearReadout",
+            time_steps=max(int(signed_modules[block_input_name].T), 1),
+            output_neurons_per_step=0,
+            positive_spikes=0,
+            negative_spikes=0,
+            input_positive_spikes=source_positive,
+            input_negative_spikes=source_negative,
+            input_spikes_by_time=source_by_time,
+            time_scales=tuple(1.0 for _ in source_by_time),
+            synaptic_ops_override=(
+                (source_positive + source_negative) * classifier_fanout
+            ),
+            has_spike_output=False,
+        )
+    )
+    return stats
+
+
 def format_spike_stats_report(layer_stats):
     total_pos = sum(item.positive_spikes for item in layer_stats)
     total_neg = sum(item.negative_spikes for item in layer_stats)
@@ -213,10 +393,30 @@ def format_spike_stats_report(layer_stats):
     lines.append("-" * 120)
 
     for item in layer_stats:
+        positive_rate = (
+            f"{item.positive_spike_rate:>9.4%}"
+            if item.has_spike_output
+            else f"{'-':>10}"
+        )
+        negative_rate = (
+            f"{item.negative_spike_rate:>9.4%}"
+            if item.has_spike_output
+            else f"{'-':>10}"
+        )
+        total_rate_item = (
+            f"{item.total_spike_rate:>9.4%}"
+            if item.has_spike_output
+            else f"{'-':>10}"
+        )
+        sparsity = (
+            f"{item.spike_sparsity:>9.4%}"
+            if item.has_spike_output
+            else f"{'-':>10}"
+        )
         lines.append(
             f"{item.name:<28} {item.kind:<8} "
-            f"{item.positive_spike_rate:>9.4%} {item.negative_spike_rate:>9.4%} "
-            f"{item.total_spike_rate:>9.4%} {item.spike_sparsity:>9.4%} "
+            f"{positive_rate} {negative_rate} "
+            f"{total_rate_item} {sparsity} "
             f"{item.total_input_spikes:>14,d} "
             f"{item.sops:>16,d} {item.scale_operations:>16,d}"
         )
