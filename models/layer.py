@@ -126,7 +126,11 @@ class SignedIF(nn.Module):
         self.bias_base = None
         self.bias_slope = None
         self.bias_state = None
+        self.temporal_basis = None
+        self.temporal_coeff = None
+        self.owns_temporal_basis = False
         self.enable_state_bias = True
+        self.snm_negative_margin = 0.0
         self.coding_mode = "rate"
         self.refinement_schedule = "geometric"
         self.refinement_ratio = 2.0
@@ -176,6 +180,16 @@ class SignedIF(nn.Module):
         self.time_scales = None
         self._time_scale_cache_key = None
         self.init_mem()
+
+    def set_snm_negative_margin(self, margin):
+        """Set a non-negative dead-band on top of the signed threshold."""
+        margin = float(margin)
+        if margin < 0:
+            raise ValueError("SNM negative margin must be non-negative")
+        self.snm_negative_margin = margin
+
+    def effective_negative_threshold(self):
+        return self.neg_thresh.data * (1.0 + self.snm_negative_margin)
 
     def get_time_scales(self, reference):
         schedule = (
@@ -234,7 +248,14 @@ class SignedIF(nn.Module):
 
         if self.enable_signed:
             neg_mask = (
-                (mem <= -self.refinement_negative_margin * quantum)
+                (
+                    mem
+                    <= -(
+                        self.refinement_negative_margin
+                        * (1.0 + self.snm_negative_margin)
+                    )
+                    * quantum
+                )
                 & (transmitted + tolerance >= quantum)
             )
             neg_spike = torch.where(
@@ -278,6 +299,9 @@ class SignedIF(nn.Module):
         self.bias_base = None
         self.bias_slope = None
         self.bias_state = None
+        self.temporal_basis = None
+        self.temporal_coeff = None
+        self.owns_temporal_basis = False
     # =====================================================================
 
     def reset_stats(self):
@@ -310,7 +334,7 @@ class SignedIF(nn.Module):
 
     # ====================== [新增] FTBC 偏置初始化 =========================
     def set_ftbc_mode(self, mode):
-        if mode not in {"none", "full", "state_low_rank"}:
+        if mode not in {"none", "full", "state_low_rank", "temporal_low_rank"}:
             raise ValueError(f"Unsupported FTBC mode: {mode}")
         if self.ftbc_mode != mode:
             self.reset_bias()
@@ -348,6 +372,16 @@ class SignedIF(nn.Module):
             return torch.zeros_like(reference)
         if self.ftbc_mode == "full":
             return self._reshape_channel_bias(self.time_based_bias[t], reference)
+        if self.ftbc_mode == "temporal_low_rank":
+            if self.temporal_basis is None or self.temporal_coeff is None:
+                raise RuntimeError(
+                    "Temporal-LR FTBC must be initialized from a Full-FTBC teacher"
+                )
+            channel_bias = torch.matmul(
+                self.temporal_basis[t],
+                self.temporal_coeff,
+            )
+            return self._reshape_channel_bias(channel_bias, reference)
 
         tau = float(t) / max(self.T - 1, 1)
         base = self._reshape_channel_bias(self.bias_base, reference)
@@ -371,6 +405,11 @@ class SignedIF(nn.Module):
             if self.enable_state_bias:
                 tensors.append(self.bias_state)
             return sum(item.numel() for item in tensors if item is not None)
+        if self.ftbc_mode == "temporal_low_rank":
+            tensors = [self.temporal_coeff]
+            if self.owns_temporal_basis:
+                tensors.append(self.temporal_basis)
+            return sum(item.numel() for item in tensors if item is not None)
         return 0
 
     def ftbc_storage_bytes(self):
@@ -389,7 +428,24 @@ class SignedIF(nn.Module):
                 for item in tensors
                 if item is not None
             )
+        if self.ftbc_mode == "temporal_low_rank":
+            tensors = [self.temporal_coeff]
+            if self.owns_temporal_basis:
+                tensors.append(self.temporal_basis)
+            return sum(
+                item.numel() * item.element_size()
+                for item in tensors
+                if item is not None
+            )
         return 0
+
+    def ftbc_synthesis_macs(self):
+        if self.ftbc_mode != "temporal_low_rank":
+            return 0
+        if self.temporal_basis is None or self.temporal_coeff is None:
+            return 0
+        rank, channels = self.temporal_coeff.shape
+        return int(self.T) * int(rank) * int(channels)
     # =====================================================================
 
     def forward(self, x):
@@ -403,7 +459,7 @@ class SignedIF(nn.Module):
 
             spike_pot = []
             pos_thresh = self.thresh.data
-            neg_thresh = self.neg_thresh.data
+            neg_thresh = self.effective_negative_threshold()
 
             for t in range(self.T):
                 if self.uses_successive_refinement():

@@ -38,6 +38,12 @@
 | `comparative_ablation/cifar100/SR_THREE_WAY_ABLATION_cifar100.md` | CIFAR-100/VGG16 三组严格对照：完整 FTBC、匹配权重的 state-low-rank FTBC、state-low-rank FTBC+CSRR，T=1/2/4/8/16/32 | `scripts/experiments/run_successive_refinement_ablation.py` | 直接 | 最新正式结果 |
 | `comparative_ablation/cifar100/RESNET20_SIX_WAY_ABLATION.md` | CIFAR-100/ResNet20，使用训练日志 68.78% 的 QCFS-L8 权重；SNM 开/关与 FTBC none/full/state-low-rank 的 2×3 严格对照，全部启用 R0、禁用 CSRR，T=1/2/4/8/16/32 | `scripts/experiments/run_resnet20_qcfs_ablation.py` | 直接 | 最新正式结果 |
 | `comparative_ablation/cifar100/RESNET20_STATE_LR_CAUSAL_DIAGNOSTICS.md` | 对 ResNet20 的 SNM×state-low-rank 异常做三项因果诊断：复用 E 系数开启 SNM、关闭 `bias_state`、五批校准后全局裁剪；T=4/8/16/32 | `scripts/experiments/run_resnet20_state_lr_causal_diagnostics.py` | 直接 | 最新正式诊断 |
+| `comparative_ablation/cifar100/TEMPORAL_LR_GATED_SNM_CIFAR100_RESNET20.md` | CIFAR-100/ResNet20 的 Full-FTBC 教师压缩、Temporal-LR 与冻结后 Gated-SNM 组合实验 | `scripts/experiments/run_temporal_lr_gated_snm.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/TEMPORAL_LR_GATED_SNM_CIFAR100_VGG16.md` | CIFAR-100/VGG16 的 Full-FTBC 教师压缩、Temporal-LR 与冻结后 Gated-SNM 组合实验 | `scripts/experiments/run_temporal_lr_gated_snm.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/TEMPORAL_LR_GATED_SNM_CIFAR100_SUMMARY.md` | Temporal-LR + Gated-SNM 在 ResNet20 和 VGG16 上的跨网络结果汇总 | 上述两份 Temporal-LR 报告 | 人工 | 正式分析 |
+| `comparative_ablation/cifar100/ROBUST_HORIZON_GATE_CIFAR100_RESNET20.md` | CIFAR-100/ResNet20 的稳健 horizon gate 验证 | `scripts/experiments/run_horizon_gate_validation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/ROBUST_HORIZON_GATE_CIFAR100_VGG16.md` | CIFAR-100/VGG16 的稳健 horizon gate 验证 | `scripts/experiments/run_horizon_gate_validation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/ROBUST_HORIZON_GATE_CIFAR100_SUMMARY.md` | 稳健 horizon gate 在 ResNet20 和 VGG16 上的跨网络结果汇总 | 上述两份 horizon gate 报告 | 人工 | 正式分析 |
 
 ## State-conditioned Low-rank FTBC
 

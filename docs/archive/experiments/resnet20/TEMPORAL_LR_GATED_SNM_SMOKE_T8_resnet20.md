@@ -1,0 +1,211 @@
+# QCFS Temporal-LR + Gated-SNM CIFAR-100 Experiment
+
+- Architecture: resnet20
+- Checkpoint: resnet20_L[8]_paper_bs128_noaa_seed42_lr002_resumable.pth
+- Checkpoint SHA256: `1fbf69f69b56b0c258c1f4a47574aecd5c37b48e842a90e0e3ab49e8aff00dc2`
+- ANN accuracy: 68.00%
+- Time steps: [8]
+- Calibration: 1 x 200
+- Gate validation: 1 x 200
+- Fit data SHA256: `42e35ed3bdcda2e94471199d0ce318fef1b60aa43ec493ec52631af8e5b10049`
+- Validation data SHA256: `ed8a6c033924c980bc943bf1c48e1fff63f1a04baf4e661dd89ae16f9f52742e`
+- SNM is disabled for Full-FTBC teacher calibration.
+- Rank and gate margins use calibration-validation data only.
+
+## Accuracy
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 50.50% |
+| B_QCFS_STANDARD_SNM_R0 | 58.50% |
+| C_FULL_UNSIGNED_TEACHER | 58.50% |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 63.00% |
+| E_TEMPORAL_R4_UNSIGNED | 57.50% |
+| F_TEMPORAL_R4_STANDARD_SNM | 63.00% |
+| G_TEMPORAL_R4_GATED_SNM | 63.00% |
+| H_HYBRID_R4_UNSIGNED | 59.50% |
+| I_HYBRID_R4_GATED_SNM | 63.50% |
+
+## Input-driven SOPs
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 15,985,678,304 |
+| B_QCFS_STANDARD_SNM_R0 | 16,841,309,656 |
+| C_FULL_UNSIGNED_TEACHER | 15,564,386,516 |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 16,328,287,924 |
+| E_TEMPORAL_R4_UNSIGNED | 15,567,802,320 |
+| F_TEMPORAL_R4_STANDARD_SNM | 16,324,182,304 |
+| G_TEMPORAL_R4_GATED_SNM | 16,324,182,304 |
+| H_HYBRID_R4_UNSIGNED | 15,567,983,404 |
+| I_HYBRID_R4_GATED_SNM | 16,318,799,668 |
+
+## Positive spike rate
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 21.0858% |
+| B_QCFS_STANDARD_SNM_R0 | 21.6052% |
+| C_FULL_UNSIGNED_TEACHER | 20.7070% |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 21.1961% |
+| E_TEMPORAL_R4_UNSIGNED | 20.7097% |
+| F_TEMPORAL_R4_STANDARD_SNM | 21.1912% |
+| G_TEMPORAL_R4_GATED_SNM | 21.1912% |
+| H_HYBRID_R4_UNSIGNED | 20.7109% |
+| I_HYBRID_R4_GATED_SNM | 21.1884% |
+
+## Negative spike rate
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0.0000% |
+| B_QCFS_STANDARD_SNM_R0 | 0.4753% |
+| C_FULL_UNSIGNED_TEACHER | 0.0000% |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 0.4302% |
+| E_TEMPORAL_R4_UNSIGNED | 0.0000% |
+| F_TEMPORAL_R4_STANDARD_SNM | 0.4295% |
+| G_TEMPORAL_R4_GATED_SNM | 0.4295% |
+| H_HYBRID_R4_UNSIGNED | 0.0000% |
+| I_HYBRID_R4_GATED_SNM | 0.4274% |
+
+## Overall sparsity
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 78.9142% |
+| B_QCFS_STANDARD_SNM_R0 | 77.9195% |
+| C_FULL_UNSIGNED_TEACHER | 79.2930% |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 78.3737% |
+| E_TEMPORAL_R4_UNSIGNED | 79.2903% |
+| F_TEMPORAL_R4_STANDARD_SNM | 78.3793% |
+| G_TEMPORAL_R4_GATED_SNM | 78.3793% |
+| H_HYBRID_R4_UNSIGNED | 79.2891% |
+| I_HYBRID_R4_GATED_SNM | 78.3842% |
+
+## FTBC parameters
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0 |
+| B_QCFS_STANDARD_SNM_R0 | 0 |
+| C_FULL_UNSIGNED_TEACHER | 5,504 |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 5,504 |
+| E_TEMPORAL_R4_UNSIGNED | 2,784 |
+| F_TEMPORAL_R4_STANDARD_SNM | 2,784 |
+| G_TEMPORAL_R4_GATED_SNM | 2,784 |
+| H_HYBRID_R4_UNSIGNED | 3,040 |
+| I_HYBRID_R4_GATED_SNM | 3,040 |
+
+## FTBC storage bytes
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0 |
+| B_QCFS_STANDARD_SNM_R0 | 0 |
+| C_FULL_UNSIGNED_TEACHER | 22,016 |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 22,016 |
+| E_TEMPORAL_R4_UNSIGNED | 11,136 |
+| F_TEMPORAL_R4_STANDARD_SNM | 11,136 |
+| G_TEMPORAL_R4_GATED_SNM | 11,136 |
+| H_HYBRID_R4_UNSIGNED | 12,160 |
+| I_HYBRID_R4_GATED_SNM | 12,160 |
+
+## Temporal bias synthesis MACs
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0 |
+| B_QCFS_STANDARD_SNM_R0 | 0 |
+| C_FULL_UNSIGNED_TEACHER | 0 |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 0 |
+| E_TEMPORAL_R4_UNSIGNED | 22,016 |
+| F_TEMPORAL_R4_STANDARD_SNM | 22,016 |
+| G_TEMPORAL_R4_GATED_SNM | 22,016 |
+| H_HYBRID_R4_UNSIGNED | 19,968 |
+| I_HYBRID_R4_GATED_SNM | 19,968 |
+
+## SNM gate parameters
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0 |
+| B_QCFS_STANDARD_SNM_R0 | 0 |
+| C_FULL_UNSIGNED_TEACHER | 0 |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 0 |
+| E_TEMPORAL_R4_UNSIGNED | 0 |
+| F_TEMPORAL_R4_STANDARD_SNM | 0 |
+| G_TEMPORAL_R4_GATED_SNM | 4 |
+| H_HYBRID_R4_UNSIGNED | 0 |
+| I_HYBRID_R4_GATED_SNM | 4 |
+
+## SNM runtime state bytes per sample
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 1,507,328 |
+| B_QCFS_STANDARD_SNM_R0 | 1,507,328 |
+| C_FULL_UNSIGNED_TEACHER | 1,507,328 |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 1,507,328 |
+| E_TEMPORAL_R4_UNSIGNED | 1,507,328 |
+| F_TEMPORAL_R4_STANDARD_SNM | 1,507,328 |
+| G_TEMPORAL_R4_GATED_SNM | 1,507,328 |
+| H_HYBRID_R4_UNSIGNED | 1,507,328 |
+| I_HYBRID_R4_GATED_SNM | 1,507,328 |
+
+## Full-teacher calibration elapsed
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0.0s |
+| B_QCFS_STANDARD_SNM_R0 | 0.0s |
+| C_FULL_UNSIGNED_TEACHER | 0.9s |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 0.9s |
+| E_TEMPORAL_R4_UNSIGNED | 0.9s |
+| F_TEMPORAL_R4_STANDARD_SNM | 0.9s |
+| G_TEMPORAL_R4_GATED_SNM | 0.9s |
+| H_HYBRID_R4_UNSIGNED | 0.9s |
+| I_HYBRID_R4_GATED_SNM | 0.9s |
+
+## Temporal compression elapsed
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0.000s |
+| B_QCFS_STANDARD_SNM_R0 | 0.000s |
+| C_FULL_UNSIGNED_TEACHER | 0.000s |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 0.000s |
+| E_TEMPORAL_R4_UNSIGNED | 0.070s |
+| F_TEMPORAL_R4_STANDARD_SNM | 0.023s |
+| G_TEMPORAL_R4_GATED_SNM | 0.024s |
+| H_HYBRID_R4_UNSIGNED | 0.019s |
+| I_HYBRID_R4_GATED_SNM | 0.020s |
+
+## Inference elapsed
+
+| Config | T=8 |
+|---|---:|
+| A_QCFS_R0 | 0.0s |
+| B_QCFS_STANDARD_SNM_R0 | 0.0s |
+| C_FULL_UNSIGNED_TEACHER | 0.0s |
+| D_FULL_STANDARD_SNM_AFTER_UNSIGNED | 0.0s |
+| E_TEMPORAL_R4_UNSIGNED | 0.0s |
+| F_TEMPORAL_R4_STANDARD_SNM | 0.1s |
+| G_TEMPORAL_R4_GATED_SNM | 0.0s |
+| H_HYBRID_R4_UNSIGNED | 0.0s |
+| I_HYBRID_R4_GATED_SNM | 0.0s |
+
+## Rank screen on calibration validation
+
+### T=8
+
+| Rank | Effective rank | Val acc. | Logit MSE | Explained energy | Storage |
+|---:|---:|---:|---:|---:|---:|
+| 2 | 2 | 37.50% | 2.211659 | 0.687120 | 5,568 |
+| 4 | 4 | 38.50% | 2.160621 | 0.864889 | 11,136 |
+| 6 | 6 | 40.50% | 2.243951 | 0.962835 | 16,704 |
+
+## Selected SNM margins
+
+| T | Early | Middle | Late | Final | Baseline val acc. | Gated val acc. |
+|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 0.0 | 0.0 | 0.0 | 0.0 | 46.00% | 46.00% |
