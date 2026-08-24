@@ -129,6 +129,7 @@ class SignedIF(nn.Module):
         self.temporal_basis = None
         self.temporal_coeff = None
         self.owns_temporal_basis = False
+        self.parity_anchor_bias = None
         self.enable_state_bias = True
         self.snm_negative_margin = 0.0
         self.coding_mode = "rate"
@@ -302,6 +303,7 @@ class SignedIF(nn.Module):
         self.temporal_basis = None
         self.temporal_coeff = None
         self.owns_temporal_basis = False
+        self.parity_anchor_bias = None
     # =====================================================================
 
     def reset_stats(self):
@@ -334,7 +336,13 @@ class SignedIF(nn.Module):
 
     # ====================== [新增] FTBC 偏置初始化 =========================
     def set_ftbc_mode(self, mode):
-        if mode not in {"none", "full", "state_low_rank", "temporal_low_rank"}:
+        if mode not in {
+            "none",
+            "full",
+            "state_low_rank",
+            "temporal_low_rank",
+            "parity_anchor",
+        }:
             raise ValueError(f"Unsupported FTBC mode: {mode}")
         if self.ftbc_mode != mode:
             self.reset_bias()
@@ -382,6 +390,20 @@ class SignedIF(nn.Module):
                 self.temporal_coeff,
             )
             return self._reshape_channel_bias(channel_bias, reference)
+        if self.ftbc_mode == "parity_anchor":
+            if self.parity_anchor_bias is None:
+                raise RuntimeError(
+                    "Parity-Anchor FTBC must be initialized from a Full-FTBC teacher"
+                )
+            if t < 2:
+                channel_bias = self.parity_anchor_bias[t]
+            else:
+                parity_sign = 1.0 if t % 2 == 0 else -1.0
+                channel_bias = (
+                    self.parity_anchor_bias[2]
+                    + parity_sign * self.parity_anchor_bias[3]
+                )
+            return self._reshape_channel_bias(channel_bias, reference)
 
         tau = float(t) / max(self.T - 1, 1)
         base = self._reshape_channel_bias(self.bias_base, reference)
@@ -410,6 +432,12 @@ class SignedIF(nn.Module):
             if self.owns_temporal_basis:
                 tensors.append(self.temporal_basis)
             return sum(item.numel() for item in tensors if item is not None)
+        if self.ftbc_mode == "parity_anchor":
+            return (
+                0
+                if self.parity_anchor_bias is None
+                else self.parity_anchor_bias.numel()
+            )
         return 0
 
     def ftbc_storage_bytes(self):
@@ -437,9 +465,22 @@ class SignedIF(nn.Module):
                 for item in tensors
                 if item is not None
             )
+        if self.ftbc_mode == "parity_anchor":
+            return (
+                0
+                if self.parity_anchor_bias is None
+                else self.parity_anchor_bias.numel()
+                * self.parity_anchor_bias.element_size()
+            )
         return 0
 
     def ftbc_synthesis_macs(self):
+        if self.ftbc_mode == "parity_anchor":
+            if self.parity_anchor_bias is None:
+                return 0
+            channels = int(self.parity_anchor_bias.shape[1])
+            active_terms = min(int(self.T), 2) + 2 * max(int(self.T) - 2, 0)
+            return active_terms * channels
         if self.ftbc_mode != "temporal_low_rank":
             return 0
         if self.temporal_basis is None or self.temporal_coeff is None:
