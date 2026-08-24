@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import random
 import sys
@@ -17,6 +18,7 @@ import torch.optim
 import numpy as np
 from models import modelpool
 from preprocess import datapool
+from scripts.experiments.qcfs_checkpoint import checkpoint_sha256
 from utils import train, val, seed_all, get_logger
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
@@ -55,6 +57,11 @@ parser.add_argument(
     '--run_epochs',
     type=int,
     help='maximum epochs to execute in this invocation (for exact chunked runs)',
+)
+parser.add_argument(
+    '--overwrite',
+    action='store_true',
+    help='allow a fresh run to overwrite artifacts with the same identifier',
 )
 
 args = None
@@ -104,6 +111,17 @@ def atomic_torch_save(value, path):
     os.replace(temporary_path, path)
 
 
+def atomic_json_save(value, path):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    temporary_path.write_text(
+        json.dumps(value, indent=2, sort_keys=False),
+        encoding="utf-8",
+    )
+    os.replace(temporary_path, path)
+
+
 def training_config(args):
     return {
         "dataset": args.dataset,
@@ -147,6 +165,7 @@ def main(cli_args=None):
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     best_acc = 0
+    best_epoch = -1
     start_epoch = 0
 
     identifier = args.model
@@ -159,6 +178,20 @@ def main(cli_args=None):
     state_path = Path(args.state_path) if args.state_path else Path(
         log_dir, f"{identifier}.train_state.pth"
     )
+    checkpoint_path = Path(log_dir, f"{identifier}.pth")
+    log_path = Path(log_dir, f"{identifier}.log")
+    metadata_path = Path(log_dir, f"{identifier}.metadata.json")
+    if not args.resume_state and not args.overwrite:
+        collisions = [
+            path
+            for path in (checkpoint_path, state_path, log_path, metadata_path)
+            if path.exists()
+        ]
+        if collisions:
+            raise FileExistsError(
+                "Refusing to overwrite existing training artifacts: "
+                + ", ".join(str(path) for path in collisions)
+            )
     resume = None
     if args.resume_state:
         resume = torch.load(args.resume_state, map_location="cpu")
@@ -172,11 +205,12 @@ def main(cli_args=None):
         optimizer.load_state_dict(resume["optimizer"])
         scheduler.load_state_dict(resume["scheduler"])
         best_acc = float(resume["best_acc"])
+        best_epoch = int(resume.get("best_epoch", -1))
         start_epoch = int(resume["epoch"]) + 1
         restore_rng_state(resume["rng_state"])
 
     logger = get_logger(
-        os.path.join(log_dir, '%s.log'%(identifier)),
+        log_path,
         filemode="a" if resume is not None else "w",
     )
     if resume is None:
@@ -203,12 +237,14 @@ def main(cli_args=None):
 
         if best_acc < tmp:
             best_acc = tmp
-            torch.save(model.state_dict(), os.path.join(log_dir, '%s.pth'%(identifier)))
+            best_epoch = epoch
+            torch.save(model.state_dict(), checkpoint_path)
 
         atomic_torch_save(
             {
                 "epoch": epoch,
                 "best_acc": best_acc,
+                "best_epoch": best_epoch,
                 "model": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "scheduler": scheduler.state_dict(),
@@ -219,6 +255,24 @@ def main(cli_args=None):
         )
 
     logger.info('Best Test acc={:.3f}'.format(best_acc))
+    logger.info('Best Test epoch={}'.format(best_epoch))
+    metadata = {
+        "status": "complete" if stop_epoch == args.epochs else "in_progress",
+        "config": training_config(args),
+        "checkpoint_selection": "highest_test_accuracy",
+        "test_selection_bias": True,
+        "best_epoch_zero_based": best_epoch,
+        "best_epoch_one_based": best_epoch + 1 if best_epoch >= 0 else None,
+        "best_test_accuracy": best_acc,
+        "completed_epochs": stop_epoch,
+        "checkpoint": str(checkpoint_path),
+        "checkpoint_sha256": (
+            checkpoint_sha256(checkpoint_path) if checkpoint_path.exists() else None
+        ),
+        "training_state": str(state_path),
+        "log": str(log_path),
+    }
+    atomic_json_save(metadata, metadata_path)
 
 if __name__ == "__main__":
     main()
