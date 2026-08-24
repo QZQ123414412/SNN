@@ -1,0 +1,192 @@
+# QCFS + Full/Temporal-LR/PA-FTBC + HA-SNM Ablation
+
+Status: complete
+
+- Dataset/architecture: CIFAR-100/vgg16
+- QCFS L: 8
+- ANN accuracy: 77.35%
+- Checkpoint: `cifar100-vgg16-l8-example.pth`
+- Checkpoint SHA256: `8da450ef6f867da8b35a092d6de080933d3873ad012978507783b7f8d6ef6339`
+- Fit/validation SHA256: `9c12d1f2bc2972cbb843d46a275d776ef09b820815e721ab3b0a117e0d0f263a` / `d0fe62738ca5d259b0a912cdc71376fb284d0d74f031679f434ef359a6cd70c3`
+- Test samples: 10,000
+- Evaluation profile: `not-applicable`
+- HA-SNM threshold schedule: start=1.25, end=0.5, reference horizon=8.0, linear.
+- HA-SNM keeps the original transmitted-credit/R0 rule and changes only the negative-spike decision threshold.
+- It uses the original -theta event amplitude, adds no dense neuron state, and has two global FP32 deployment constants plus one fixed reference horizon (12 bytes if stored).
+- Full-FTBC is fitted independently at every T with SNM off; Temporal-LR and PA are compressed from that same teacher.
+- Temporal-LR and PA fall back exactly to Full-FTBC at T<=4.
+- Checkpoint note: existing frozen repository checkpoint and evaluation protocol.
+
+## Primary accuracy
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 | Mean |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 61.72% | 67.58% | 73.39% | 76.47% | 77.40% | 77.53% | 72.35% |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 61.72% | 67.68% | 74.01% | 77.16% | 77.64% | 77.61% | 72.64% |
+| C_QCFS_FULL_FTBC_HA_R0 | 61.72% | 68.52% | 74.69% | 77.34% | 77.60% | 77.60% | 72.91% |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 61.72% | 67.58% | 73.39% | 76.37% | 77.62% | 77.75% | 72.41% |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 61.72% | 67.68% | 74.01% | 77.12% | 77.65% | 77.57% | 72.63% |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 61.72% | 68.52% | 74.69% | 77.08% | 77.54% | 77.58% | 72.86% |
+| G_QCFS_PA_FTBC_OFF_R0 | 61.72% | 67.58% | 73.39% | 76.24% | 77.49% | 77.61% | 72.34% |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 61.72% | 67.68% | 74.01% | 76.98% | 77.49% | 77.54% | 72.57% |
+| I_QCFS_PA_FTBC_HA_R0 | 61.72% | 68.52% | 74.69% | 77.64% | 77.49% | 77.62% | 72.95% |
+
+## HA-SNM accuracy gain
+
+| Family | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 | Mean |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Full-FTBC: HA - standard | +0.00pp | +0.84pp | +0.68pp | +0.18pp | -0.04pp | -0.01pp | +0.275pp |
+| Full-FTBC: HA - off | +0.00pp | +0.94pp | +1.30pp | +0.87pp | +0.20pp | +0.07pp | +0.563pp |
+| Temporal-LR FTBC: HA - standard | +0.00pp | +0.84pp | +0.68pp | -0.04pp | -0.11pp | +0.01pp | +0.230pp |
+| Temporal-LR FTBC: HA - off | +0.00pp | +0.94pp | +1.30pp | +0.71pp | -0.08pp | -0.17pp | +0.450pp |
+| PA-FTBC: HA - standard | +0.00pp | +0.84pp | +0.68pp | +0.66pp | +0.00pp | +0.08pp | +0.377pp |
+| PA-FTBC: HA - off | +0.00pp | +0.94pp | +1.30pp | +1.40pp | +0.00pp | +0.01pp | +0.608pp |
+
+## ANN-SNN logit MSE
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 11.70284070 | 3.59960155 | 1.24905064 | 0.44585386 | 0.16363363 | 0.08881311 |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 11.70284070 | 3.53799891 | 1.05203704 | 0.25555007 | 0.09663141 | 0.07206773 |
+| C_QCFS_FULL_FTBC_HA_R0 | 11.70284070 | 3.23461353 | 0.87582666 | 0.20730264 | 0.09566787 | 0.07193573 |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 11.70284070 | 3.59960155 | 1.24905064 | 0.45768403 | 0.17105388 | 0.09102433 |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 11.70284070 | 3.53799891 | 1.05203704 | 0.25781043 | 0.09522265 | 0.07109507 |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 11.70284070 | 3.23461353 | 0.87582666 | 0.20416601 | 0.09326703 | 0.07098252 |
+| G_QCFS_PA_FTBC_OFF_R0 | 11.70284070 | 3.59960155 | 1.24905064 | 0.44832980 | 0.16476413 | 0.08922123 |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 11.70284070 | 3.53799891 | 1.05203704 | 0.25539854 | 0.09720389 | 0.07264778 |
+| I_QCFS_PA_FTBC_HA_R0 | 11.70284070 | 3.23461353 | 0.87582666 | 0.20629575 | 0.09578974 | 0.07247485 |
+
+## Positive spike rate
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 14.966055% | 15.129794% | 14.991640% | 14.972103% | 14.968577% | 14.966596% |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 14.966055% | 15.138903% | 15.010658% | 14.994965% | 14.985965% | 14.980309% |
+| C_QCFS_FULL_FTBC_HA_R0 | 14.966055% | 15.169647% | 15.039221% | 15.012871% | 14.989790% | 14.981400% |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 14.966055% | 15.129794% | 14.991640% | 15.029483% | 15.028983% | 15.014473% |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 14.966055% | 15.138903% | 15.010658% | 15.053012% | 15.046128% | 15.028009% |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 14.966055% | 15.169647% | 15.039221% | 15.071141% | 15.049947% | 15.029033% |
+| G_QCFS_PA_FTBC_OFF_R0 | 14.966055% | 15.129794% | 14.991640% | 14.973450% | 14.968318% | 14.967167% |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 14.966055% | 15.138903% | 15.010658% | 14.995877% | 14.985760% | 14.981129% |
+| I_QCFS_PA_FTBC_HA_R0 | 14.966055% | 15.169647% | 15.039221% | 15.013904% | 14.989473% | 14.982218% |
+
+## Negative spike rate
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 0.000000% | 0.000000% | 0.000000% | 0.000000% | 0.000000% | 0.000000% |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 0.000000% | 0.008617% | 0.028697% | 0.039150% | 0.033912% | 0.025950% |
+| C_QCFS_FULL_FTBC_HA_R0 | 0.000000% | 0.081932% | 0.091823% | 0.078685% | 0.041683% | 0.027921% |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 0.000000% | 0.000000% | 0.000000% | 0.000000% | 0.000000% | 0.000000% |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 0.000000% | 0.008617% | 0.028697% | 0.039831% | 0.034813% | 0.026705% |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 0.000000% | 0.081932% | 0.091823% | 0.079772% | 0.042850% | 0.028753% |
+| G_QCFS_PA_FTBC_OFF_R0 | 0.000000% | 0.000000% | 0.000000% | 0.000000% | 0.000000% | 0.000000% |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 0.000000% | 0.008617% | 0.028697% | 0.039176% | 0.033983% | 0.026043% |
+| I_QCFS_PA_FTBC_HA_R0 | 0.000000% | 0.081932% | 0.091823% | 0.078781% | 0.041789% | 0.028026% |
+
+## Overall spike sparsity
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 85.033945% | 84.870206% | 85.008360% | 85.027897% | 85.031423% | 85.033404% |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 85.033945% | 84.852480% | 84.960645% | 84.965886% | 84.980124% | 84.993742% |
+| C_QCFS_FULL_FTBC_HA_R0 | 85.033945% | 84.748420% | 84.868956% | 84.908444% | 84.968527% | 84.990679% |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 85.033945% | 84.870206% | 85.008360% | 84.970517% | 84.971017% | 84.985527% |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 85.033945% | 84.852480% | 84.960645% | 84.907157% | 84.919059% | 84.945286% |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 85.033945% | 84.748420% | 84.868956% | 84.849087% | 84.907203% | 84.942214% |
+| G_QCFS_PA_FTBC_OFF_R0 | 85.033945% | 84.870206% | 85.008360% | 85.026550% | 85.031682% | 85.032833% |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 85.033945% | 84.852480% | 84.960645% | 84.964947% | 84.980257% | 84.992827% |
+| I_QCFS_PA_FTBC_HA_R0 | 85.033945% | 84.748420% | 84.868956% | 84.907315% | 84.968738% | 84.989756% |
+
+## Input-driven SOPs
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 642,073,748,672 | 1,287,142,886,272 | 2,547,186,255,872 | 5,084,745,842,240 | 10,167,219,618,240 | 20,328,287,895,616 |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 642,073,748,672 | 1,289,084,024,192 | 2,563,266,864,000 | 5,130,873,717,056 | 10,243,080,312,896 | 20,441,318,701,888 |
+| C_QCFS_FULL_FTBC_HA_R0 | 642,073,748,672 | 1,302,826,770,944 | 2,594,076,125,312 | 5,170,420,069,696 | 10,258,927,760,576 | 20,449,389,632,448 |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 642,073,748,672 | 1,287,142,886,272 | 2,547,186,255,872 | 5,107,622,627,008 | 10,212,382,280,256 | 20,398,244,034,944 |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 642,073,748,672 | 1,289,084,024,192 | 2,563,266,864,000 | 5,154,410,295,232 | 10,289,123,421,376 | 20,513,091,425,792 |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 642,073,748,672 | 1,302,826,770,944 | 2,594,076,125,312 | 5,194,370,523,456 | 10,305,300,329,280 | 20,521,182,360,704 |
+| G_QCFS_PA_FTBC_OFF_R0 | 642,073,748,672 | 1,287,142,886,272 | 2,547,186,255,872 | 5,085,945,299,392 | 10,166,830,189,312 | 20,328,826,782,912 |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 642,073,748,672 | 1,289,084,024,192 | 2,563,266,864,000 | 5,131,772,443,840 | 10,242,960,741,888 | 20,442,878,013,632 |
+| I_QCFS_PA_FTBC_HA_R0 | 642,073,748,672 | 1,302,826,770,944 | 2,594,076,125,312 | 5,171,435,107,648 | 10,258,723,281,536 | 20,451,007,596,096 |
+
+## FTBC parameters
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 12,416 | 24,832 | 49,664 | 99,328 | 198,656 | 397,312 |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 12,416 | 24,832 | 49,664 | 99,328 | 198,656 | 397,312 |
+| C_QCFS_FULL_FTBC_HA_R0 | 12,416 | 24,832 | 49,664 | 99,328 | 198,656 | 397,312 |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 12,416 | 24,832 | 49,664 | 49,696 | 49,728 | 49,792 |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 12,416 | 24,832 | 49,664 | 49,696 | 49,728 | 49,792 |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 12,416 | 24,832 | 49,664 | 49,696 | 49,728 | 49,792 |
+| G_QCFS_PA_FTBC_OFF_R0 | 12,416 | 24,832 | 49,664 | 49,664 | 49,664 | 49,664 |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 12,416 | 24,832 | 49,664 | 49,664 | 49,664 | 49,664 |
+| I_QCFS_PA_FTBC_HA_R0 | 12,416 | 24,832 | 49,664 | 49,664 | 49,664 | 49,664 |
+
+## FTBC storage bytes
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 49,664 | 99,328 | 198,656 | 397,312 | 794,624 | 1,589,248 |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 49,664 | 99,328 | 198,656 | 397,312 | 794,624 | 1,589,248 |
+| C_QCFS_FULL_FTBC_HA_R0 | 49,664 | 99,328 | 198,656 | 397,312 | 794,624 | 1,589,248 |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 49,664 | 99,328 | 198,656 | 198,784 | 198,912 | 199,168 |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 49,664 | 99,328 | 198,656 | 198,784 | 198,912 | 199,168 |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 49,664 | 99,328 | 198,656 | 198,784 | 198,912 | 199,168 |
+| G_QCFS_PA_FTBC_OFF_R0 | 49,664 | 99,328 | 198,656 | 198,656 | 198,656 | 198,656 |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 49,664 | 99,328 | 198,656 | 198,656 | 198,656 | 198,656 |
+| I_QCFS_PA_FTBC_HA_R0 | 49,664 | 99,328 | 198,656 | 198,656 | 198,656 | 198,656 |
+
+## Bias synthesis MACs
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| C_QCFS_FULL_FTBC_HA_R0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 0 | 0 | 0 | 397,312 | 794,624 | 1,589,248 |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 0 | 0 | 0 | 397,312 | 794,624 | 1,589,248 |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 0 | 0 | 0 | 397,312 | 794,624 | 1,589,248 |
+| G_QCFS_PA_FTBC_OFF_R0 | 0 | 0 | 0 | 173,824 | 372,480 | 769,792 |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 0 | 0 | 0 | 173,824 | 372,480 | 769,792 |
+| I_QCFS_PA_FTBC_HA_R0 | 0 | 0 | 0 | 173,824 | 372,480 | 769,792 |
+
+## Inference elapsed
+
+| Config | T=1 | T=2 | T=4 | T=8 | T=16 | T=32 |
+|---|---:|---:|---:|---:|---:|---:|
+| A_QCFS_FULL_FTBC_OFF_R0 | 1.401379 | 2.069905 | 3.432519 | 5.980991 | 11.066557 | 21.100365 |
+| B_QCFS_FULL_FTBC_STANDARD_R0 | 1.476524 | 2.221237 | 3.645322 | 6.484932 | 11.955579 | 23.003237 |
+| C_QCFS_FULL_FTBC_HA_R0 | 1.473179 | 2.256944 | 3.690372 | 6.497147 | 12.007859 | 23.072168 |
+| D_QCFS_TEMPORAL_FTBC_OFF_R0 | 1.400479 | 2.103768 | 3.452561 | 6.071457 | 11.111988 | 21.188224 |
+| E_QCFS_TEMPORAL_FTBC_STANDARD_R0 | 1.454880 | 2.325199 | 3.679180 | 6.555621 | 12.071308 | 23.138347 |
+| F_QCFS_TEMPORAL_FTBC_HA_R0 | 1.480279 | 2.214387 | 3.669166 | 6.558629 | 12.077169 | 23.879100 |
+| G_QCFS_PA_FTBC_OFF_R0 | 1.489924 | 2.084065 | 3.386993 | 6.054351 | 11.206379 | 21.926083 |
+| H_QCFS_PA_FTBC_STANDARD_R0 | 1.436634 | 2.229905 | 3.618359 | 6.546431 | 12.037144 | 25.315808 |
+| I_QCFS_PA_FTBC_HA_R0 | 1.480927 | 2.237321 | 3.656542 | 6.539678 | 12.103287 | 25.549869 |
+
+## HA-SNM overhead
+
+| Item | Value |
+|---|---:|
+| Additional dense per-neuron state | 0 bytes |
+| Global constants | 3 (12 bytes if all stored as FP32) |
+| SignedIF layers | 15 |
+| Per layer/time decision overhead | one scalar threshold interpolation and the existing comparison |
+
+## Exact fallback checks
+
+| T | Mode | Full=Temporal | Full=PA |
+|---:|---|---|---|
+| 1 | SNM-off | yes | yes |
+| 1 | standard SNM | yes | yes |
+| 1 | HA-SNM | yes | yes |
+| 2 | SNM-off | yes | yes |
+| 2 | standard SNM | yes | yes |
+| 2 | HA-SNM | yes | yes |
+| 4 | SNM-off | yes | yes |
+| 4 | standard SNM | yes | yes |
+| 4 | HA-SNM | yes | yes |

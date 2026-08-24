@@ -45,6 +45,27 @@
 | `comparative_ablation/cifar100/ROBUST_HORIZON_GATE_CIFAR100_RESNET20.md` | CIFAR-100/ResNet20 的稳健 horizon gate 验证 | `scripts/experiments/run_horizon_gate_validation.py` | 直接 | 正式验证 |
 | `comparative_ablation/cifar100/ROBUST_HORIZON_GATE_CIFAR100_VGG16.md` | CIFAR-100/VGG16 的稳健 horizon gate 验证 | `scripts/experiments/run_horizon_gate_validation.py` | 直接 | 正式验证 |
 | `comparative_ablation/cifar100/ROBUST_HORIZON_GATE_CIFAR100_SUMMARY.md` | 稳健 horizon gate 在 ResNet20 和 VGG16 上的跨网络结果汇总 | 上述两份 horizon gate 报告 | 人工 | 正式分析 |
+| `comparative_ablation/cifar100/FULL_FTBC_ASNM_CIFAR100_resnet20.md` | CIFAR-100/ResNet20 的 QCFS、标准 SNM、逐时间步验证准确率门控 A-SNM、Full-FTBC 六组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_full_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/FULL_FTBC_ASNM_CIFAR100_vgg16.md` | CIFAR-100/VGG16 的 QCFS、标准 SNM、逐时间步验证准确率门控 A-SNM、Full-FTBC 六组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_full_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/FULL_FTBC_ASNM_CIFAR10_resnet20.md` | CIFAR-10/ResNet20，使用 L=8、seed 42、300 epoch 测试集最优权重的 QCFS、标准 SNM、逐时间步 A-SNM 与 Full-FTBC 六组严格消融，T=1/2/4/8/16/32；报告明确记录测试集选择偏差 | `scripts/experiments/run_full_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/FULL_FTBC_ASNM_CIFAR10_RESNET20_L4_PAPER_ALIGNED.md` | CIFAR-10/ResNet20，使用 L=4、batch size 300、paper_era profile 的论文口径对齐重训权重；QCFS、标准 SNM、逐时间步 A-SNM 与 Full-FTBC 六组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_full_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/TEMPORAL_LR_ASNM_CIFAR10_RESNET20_L4_PAPER_ALIGNED.md` | CIFAR-10/ResNet20，使用论文口径对齐重训的 QCFS L=4 权重；QCFS、Full-FTBC、共享 rank-4 Temporal-LR FTBC 与逐时间步 A-SNM 九组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_temporal_lr_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/FULL_FTBC_ASNM_CIFAR10_vgg16.md` | CIFAR-10/VGG16 旧权重在 L=8 下的后设评测；QCFS、标准 SNM、逐时间步 A-SNM 与 Full-FTBC 六组严格消融，T=1/2/4/8/16/32；不视为 L=8 重训结果 | `scripts/experiments/run_full_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/FULL_FTBC_ASNM_CIFAR10_SUMMARY.md` | CIFAR-10/ResNet20 与 VGG16 的 Full-FTBC + A-SNM 正式结果汇总 | `scripts/experiments/summarize_full_ftbc_asnm.py` | 直接 | 正式分析 |
+| `comparative_ablation/cifar10/FULL_FTBC_ASNM_CIFAR10_CIFAR100_COMPARISON.md` | Full-FTBC + A-SNM 在 CIFAR-10 与 CIFAR-100 上的双架构对照；明确限制 VGG16 的训练 L 来源 | `scripts/experiments/summarize_full_ftbc_asnm.py` | 直接 | 正式分析 |
+| `comparative_ablation/cifar100/TEMPORAL_LR_ASNM_CIFAR100_RESNET20.md` | CIFAR-100/ResNet20 的 QCFS、Full-FTBC、共享 rank-4 Temporal-LR FTBC 与逐时间步 A-SNM 九组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_temporal_lr_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/TEMPORAL_LR_ASNM_CIFAR100_VGG16.md` | CIFAR-100/VGG16 的 QCFS、Full-FTBC、共享 rank-4 Temporal-LR FTBC 与逐时间步 A-SNM 九组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_temporal_lr_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/TEMPORAL_LR_ASNM_CIFAR100_SUMMARY.md` | Temporal-LR FTBC + A-SNM 在 ResNet20 和 VGG16 上的双架构准确率与存储压缩汇总 | `scripts/experiments/run_temporal_lr_asnm_ablation.py` | 直接 | 正式分析 |
+| `comparative_ablation/cifar10/PA_FTBC_ASNM_CIFAR10_RESNET20_L4_PAPER_ALIGNED.md` | CIFAR-10/ResNet20 QCFS-L4 的 QCFS、Full、Temporal-LR、无 SVD Parity-Anchor FTBC 与各自 A-SNM 十二组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_pa_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/PA_FTBC_ASNM_CIFAR10_VGG16_L8.md` | CIFAR-10/VGG16 QCFS-L8 的 QCFS、Full、Temporal-LR、Parity-Anchor FTBC 与各自 A-SNM 十二组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_pa_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/PA_FTBC_ASNM_CIFAR100_RESNET20_L8.md` | CIFAR-100/ResNet20 QCFS-L8 的 QCFS、Full、Temporal-LR、Parity-Anchor FTBC 与各自 A-SNM 十二组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_pa_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/PA_FTBC_ASNM_CIFAR100_VGG16_L8.md` | CIFAR-100/VGG16 QCFS-L8 的 QCFS、Full、Temporal-LR、Parity-Anchor FTBC 与各自 A-SNM 十二组严格消融，T=1/2/4/8/16/32 | `scripts/experiments/run_pa_ftbc_asnm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/PA_FTBC_ASNM_FOUR_MODEL_SUMMARY.md` | Parity-Anchor FTBC 四模型正式结果、全指标、存储、合成开销与 Temporal-LR 对比汇总 | `scripts/experiments/summarize_pa_ftbc.py` | 直接 | 正式分析 |
+| `comparative_ablation/cifar10/HA_SNM_CIFAR10_RESNET20_L4_PAPER_ALIGNED.md` | CIFAR-10/ResNet20 L4 的 Full、Temporal-LR、PA-FTBC × SNM-off、原始SNM、HA-SNM九组正式消融 | `scripts/experiments/run_ha_snm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar10/HA_SNM_CIFAR10_VGG16_L8.md` | CIFAR-10/VGG16 L8 的 Full、Temporal-LR、PA-FTBC × SNM-off、原始SNM、HA-SNM九组正式消融 | `scripts/experiments/run_ha_snm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/HA_SNM_CIFAR100_RESNET20_L8.md` | CIFAR-100/ResNet20 L8 的 Full、Temporal-LR、PA-FTBC × SNM-off、原始SNM、HA-SNM九组正式消融 | `scripts/experiments/run_ha_snm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/cifar100/HA_SNM_CIFAR100_VGG16_L8.md` | CIFAR-100/VGG16 L8 的 Full、Temporal-LR、PA-FTBC × SNM-off、原始SNM、HA-SNM九组正式消融 | `scripts/experiments/run_ha_snm_ablation.py` | 直接 | 正式验证 |
+| `comparative_ablation/HA_SNM_FOUR_MODEL_DELIVERY_REPORT.md` | HA-SNM四模型准确率、MSE、脉冲/SOP、推理开销、验证筛选和1152单元回归审计汇总 | `scripts/experiments/summarize_ha_snm.py` | 直接 | 正式分析 |
 
 ## State-conditioned Low-rank FTBC
 
@@ -100,6 +121,11 @@
 |---|---|---|
 | `../archive/experiments/resnet20/DISTILL_QCFS_FINETUNE_DIAGNOSTIC.md` | CIFAR-100/ResNet20 QCFS 68.78% 权重的两条独立 100-epoch ResNet56/DIST 蒸馏微调轨迹 | 已完成诊断；最高 68.66%，未达到 69.94%，拒绝作为正式基线 |
 | `../archive/experiments/resnet20/FIXED_BUDGET_FINETUNE_DIAGNOSTIC.md` | CIFAR-100/ResNet20 QCFS 68.78% 权重的三条独立 50-epoch 微调轨迹，初始 LR 为 0.005/0.002/0.001 | 已完成诊断；最高 68.69%，未达到 69.94%，拒绝作为正式基线 |
+| `../archive/experiments/ha_snm/HA_SNM_NORMALIZED_SCREEN_CIFAR10_RESNET20_L4_20260824.md` | HA-SNM统一阈值日程的CIFAR-10/ResNet20验证集筛选；不访问测试图像 | 参数筛选归档 |
+| `../archive/experiments/ha_snm/HA_SNM_NORMALIZED_SCREEN_CIFAR10_VGG16_L8_20260824.md` | HA-SNM统一阈值日程的CIFAR-10/VGG16验证集筛选；不访问测试图像 | 参数筛选归档 |
+| `../archive/experiments/ha_snm/HA_SNM_NORMALIZED_SCREEN_CIFAR100_RESNET20_L8_20260824.md` | HA-SNM统一阈值日程的CIFAR-100/ResNet20验证集筛选；不访问测试图像 | 参数筛选归档 |
+| `../archive/experiments/ha_snm/HA_SNM_NORMALIZED_SCREEN_CIFAR100_VGG16_L8_20260824.md` | HA-SNM统一阈值日程的CIFAR-100/VGG16验证集筛选；不访问测试图像 | 参数筛选归档 |
+| `../archive/experiments/ha_snm/HA_SNM_CIFAR10_RESNET20_L4_SMOKE_T4_T8_20260824.md` | HA-SNM九组入口的T=4/8单批次冒烟和回退一致性检查 | 冒烟归档 |
 | `../archive/experiments/state_low_rank_ftbc/smoke/cifar100/STATE_LOW_RANK_FTBC_smoke_T4.md` | 单校准批次 T=4 冒烟 | 归档 |
 | `../archive/experiments/state_low_rank_ftbc/smoke/cifar100/STATE_LOW_RANK_FTBC_validation_T4_T8.md` | T=4/8 初步验证 | 归档 |
 | `../archive/experiments/state_low_rank_ftbc/implementation_validation/cifar100/STATE_LOW_RANK_FTBC_optimized_T4.md` | 优化实现 T=4 验证 | 归档 |
