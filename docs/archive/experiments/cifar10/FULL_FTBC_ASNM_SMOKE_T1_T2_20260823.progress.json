@@ -1,0 +1,4116 @@
+{
+  "status": "complete",
+  "protocol": {
+    "dataset": "cifar10",
+    "dataset_label": "CIFAR-10",
+    "architecture": "vgg16",
+    "checkpoint": {
+      "path": "D:\\master_degree_paper\\workspace\\QCFS\\cifar10-checkpoints\\cifar10-vgg16-example.pth",
+      "filename": "cifar10-vgg16-example.pth",
+      "size_bytes": 134659167,
+      "sha256": "093383192641788a7f847d5bc28671b0d0fb1e7a8f0ccc486e79f13ed6b5da84",
+      "dataset": "cifar10",
+      "architecture": "vgg16",
+      "qcfs_layers": 15,
+      "legacy_threshold_keys_normalized": 15
+    },
+    "ann_accuracy": 95.5,
+    "time_steps": [
+      1,
+      2
+    ],
+    "batch_size": 200,
+    "fit_batches": 5,
+    "validation_batches": 5,
+    "fit_sha256": "053b54e7f6ab19341f804fb5a7bc4ce3f28203aa8400a2bf5370ffdf368898df",
+    "validation_sha256": "237b49807bad9667caab5d8b8346eaa98c680283dbd9072856566c9517fc672c",
+    "alpha": 0.4,
+    "qcfs_L": 8,
+    "normalization": "CIFAR-10 normalization",
+    "resnet20_eval_profile": "not-applicable",
+    "checkpoint_selection_note": "the existing VGG16 checkpoint selection procedure is not recorded",
+    "checkpoint_interpretation_note": "the legacy VGG16 checkpoint was probably trained with L=4 and is evaluated post-hoc with L=8; it is not an L=8-trained model",
+    "a_snm_rule": "SNM-on iff on validation accuracy > off validation accuracy; ties select off",
+    "seed": 42,
+    "coding_mode": "rate",
+    "schedule": "rate",
+    "ratio": 1.0,
+    "r0": true,
+    "snm_margin": 0.0,
+    "ftbc_mode": "full",
+    "test_batches": 1,
+    "test_samples": 200,
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "dtype": "float32",
+    "validation_inferences": 8
+  },
+  "calibration": {
+    "1": {
+      "elapsed": 1.7129881999999998,
+      "ftbc_parameters": 12416,
+      "ftbc_bytes": 49664
+    },
+    "2": {
+      "elapsed": 2.7871296999999995,
+      "ftbc_parameters": 24832,
+      "ftbc_bytes": 99328
+    }
+  },
+  "validation": {
+    "qcfs": {
+      "off": {
+        "1": {
+          "acc": 77.5,
+          "logit_mse": 3.15693310546875,
+          "sops": 49381161152,
+          "positive_spikes": 31175304,
+          "negative_spikes": 0,
+          "elapsed": 0.4537999999999993
+        },
+        "2": {
+          "acc": 82.5,
+          "logit_mse": 1.6958252685546875,
+          "sops": 104974988800,
+          "positive_spikes": 64685623,
+          "negative_spikes": 0,
+          "elapsed": 0.22605200000000014
+        }
+      },
+      "on": {
+        "1": {
+          "acc": 77.5,
+          "logit_mse": 3.15693310546875,
+          "sops": 49381161152,
+          "positive_spikes": 31175304,
+          "negative_spikes": 0,
+          "elapsed": 0.15504929999999995
+        },
+        "2": {
+          "acc": 82.7,
+          "logit_mse": 1.660740625,
+          "sops": 105490185984,
+          "positive_spikes": 64856703,
+          "negative_spikes": 166791,
+          "elapsed": 0.23095599999999994
+        }
+      }
+    },
+    "full": {
+      "off": {
+        "1": {
+          "acc": 80.3,
+          "logit_mse": 3.461206103515625,
+          "sops": 51035442368,
+          "positive_spikes": 31749395,
+          "negative_spikes": 0,
+          "elapsed": 0.1354059999999997
+        },
+        "2": {
+          "acc": 83.7,
+          "logit_mse": 1.5428934814453126,
+          "sops": 105068647296,
+          "positive_spikes": 64427682,
+          "negative_spikes": 0,
+          "elapsed": 0.22014449999999997
+        }
+      },
+      "on": {
+        "1": {
+          "acc": 80.3,
+          "logit_mse": 3.461206103515625,
+          "sops": 51035442368,
+          "positive_spikes": 31749395,
+          "negative_spikes": 0,
+          "elapsed": 0.14333540000000067
+        },
+        "2": {
+          "acc": 83.9,
+          "logit_mse": 1.5263192626953126,
+          "sops": 105269677568,
+          "positive_spikes": 64470674,
+          "negative_spikes": 80636,
+          "elapsed": 0.22752269999999974
+        }
+      }
+    }
+  },
+  "gates": {
+    "qcfs": {
+      "1": false,
+      "2": true
+    },
+    "full": {
+      "1": false,
+      "2": true
+    }
+  },
+  "selection_elapsed": {
+    "qcfs": 1.0658805000000005,
+    "full": 0.7264205000000006
+  },
+  "selection_trace": {
+    "qcfs": {
+      "1": {
+        "off_accuracy": 77.5,
+        "on_accuracy": 77.5,
+        "accuracy_gain": 0.0,
+        "selected_mode": "off"
+      },
+      "2": {
+        "off_accuracy": 82.5,
+        "on_accuracy": 82.7,
+        "accuracy_gain": 0.20000000000000284,
+        "selected_mode": "on"
+      }
+    },
+    "full": {
+      "1": {
+        "off_accuracy": 80.3,
+        "on_accuracy": 80.3,
+        "accuracy_gain": 0.0,
+        "selected_mode": "off"
+      },
+      "2": {
+        "off_accuracy": 83.7,
+        "on_accuracy": 83.9,
+        "accuracy_gain": 0.20000000000000284,
+        "selected_mode": "on"
+      }
+    }
+  },
+  "results": {
+    "A_QCFS_R0": {
+      "1": {
+        "positive_spikes": 7005482,
+        "negative_spikes": 0,
+        "positive_rate": 0.12304480243929856,
+        "negative_rate": 0.0,
+        "total_rate": 0.12304480243929856,
+        "sparsity": 0.8769551975607014,
+        "sops": 11673989952,
+        "scale_operations": 0,
+        "acc": 90.5,
+        "logit_mse": 2.20622998046875,
+        "ftbc_parameters": 0,
+        "ftbc_bytes": 0,
+        "calibration_elapsed": 0.0,
+        "inference_elapsed": 0.017533500000000757,
+        "evaluated_samples": 200,
+        "snm_mode": "off",
+        "snm_enabled": false,
+        "a_snm_enabled": null,
+        "source_config": null
+      },
+      "2": {
+        "positive_spikes": 14362280,
+        "negative_spikes": 0,
+        "positive_rate": 0.1261300725044964,
+        "negative_rate": 0.0,
+        "total_rate": 0.1261300725044964,
+        "sparsity": 0.8738699274955036,
+        "sops": 24432348800,
+        "scale_operations": 0,
+        "acc": 92.5,
+        "logit_mse": 1.0142122802734375,
+        "ftbc_parameters": 0,
+        "ftbc_bytes": 0,
+        "calibration_elapsed": 0.0,
+        "inference_elapsed": 0.029577700000000817,
+        "evaluated_samples": 200,
+        "snm_mode": "off",
+        "snm_enabled": false,
+        "a_snm_enabled": null,
+        "source_config": null
+      }
+    },
+    "B_QCFS_STANDARD_SNM_R0": {
+      "1": {
+        "positive_spikes": 7005482,
+        "negative_spikes": 0,
+        "positive_rate": 0.12304480243929856,
+        "negative_rate": 0.0,
+        "total_rate": 0.12304480243929856,
+        "sparsity": 0.8769551975607014,
+        "sops": 11673989952,
+        "scale_operations": 0,
+        "acc": 90.5,
+        "logit_mse": 2.20622998046875,
+        "ftbc_parameters": 0,
+        "ftbc_bytes": 0,
+        "calibration_elapsed": 0.0,
+        "inference_elapsed": 0.01774709999999935,
+        "evaluated_samples": 200,
+        "snm_mode": "on",
+        "snm_enabled": true,
+        "a_snm_enabled": null,
+        "source_config": null
+      },
+      "2": {
+        "positive_spikes": 14382236,
+        "negative_spikes": 20932,
+        "positive_rate": 0.12630532683228418,
+        "negative_rate": 0.0001838255957733813,
+        "total_rate": 0.12648915242805756,
+        "sparsity": 0.8735108475719424,
+        "sops": 24496564864,
+        "scale_operations": 0,
+        "acc": 92.0,
+        "logit_mse": 0.9945702514648438,
+        "ftbc_parameters": 0,
+        "ftbc_bytes": 0,
+        "calibration_elapsed": 0.0,
+        "inference_elapsed": 0.03105609999999892,
+        "evaluated_samples": 200,
+        "snm_mode": "on",
+        "snm_enabled": true,
+        "a_snm_enabled": null,
+        "source_config": null
+      }
+    },
+    "C_QCFS_ASNM_R0": {
+      "1": {
+        "positive_spikes": 7005482,
+        "negative_spikes": 0,
+        "positive_rate": 0.12304480243929856,
+        "negative_rate": 0.0,
+        "total_rate": 0.12304480243929856,
+        "sparsity": 0.8769551975607014,
+        "sops": 11673989952,
+        "scale_operations": 0,
+        "acc": 90.5,
+        "logit_mse": 2.20622998046875,
+        "ftbc_parameters": 0,
+        "ftbc_bytes": 0,
+        "calibration_elapsed": 0.0,
+        "inference_elapsed": 0.017533500000000757,
+        "evaluated_samples": 200,
+        "snm_mode": "a_snm",
+        "snm_enabled": false,
+        "a_snm_enabled": false,
+        "source_config": "A_QCFS_R0",
+        "a_snm_selection_elapsed": 1.0658805000000005
+      },
+      "2": {
+        "positive_spikes": 14382236,
+        "negative_spikes": 20932,
+        "positive_rate": 0.12630532683228418,
+        "negative_rate": 0.0001838255957733813,
+        "total_rate": 0.12648915242805756,
+        "sparsity": 0.8735108475719424,
+        "sops": 24496564864,
+        "scale_operations": 0,
+        "acc": 92.0,
+        "logit_mse": 0.9945702514648438,
+        "ftbc_parameters": 0,
+        "ftbc_bytes": 0,
+        "calibration_elapsed": 0.0,
+        "inference_elapsed": 0.03105609999999892,
+        "evaluated_samples": 200,
+        "snm_mode": "a_snm",
+        "snm_enabled": true,
+        "a_snm_enabled": true,
+        "source_config": "B_QCFS_STANDARD_SNM_R0",
+        "a_snm_selection_elapsed": 1.0658805000000005
+      }
+    },
+    "D_QCFS_FULL_FTBC_R0": {
+      "1": {
+        "positive_spikes": 7182488,
+        "negative_spikes": 0,
+        "positive_rate": 0.12615374887589928,
+        "negative_rate": 0.0,
+        "total_rate": 0.12615374887589928,
+        "sparsity": 0.8738462511241007,
+        "sops": 12070835072,
+        "scale_operations": 0,
+        "acc": 91.5,
+        "logit_mse": 2.38950244140625,
+        "ftbc_parameters": 12416,
+        "ftbc_bytes": 49664,
+        "calibration_elapsed": 1.7129881999999998,
+        "inference_elapsed": 0.016123600000000238,
+        "evaluated_samples": 200,
+        "snm_mode": "off",
+        "snm_enabled": false,
+        "a_snm_enabled": null,
+        "source_config": null
+      },
+      "2": {
+        "positive_spikes": 14316704,
+        "negative_spikes": 0,
+        "positive_rate": 0.12572982239208633,
+        "negative_rate": 0.0,
+        "total_rate": 0.12572982239208633,
+        "sparsity": 0.8742701776079137,
+        "sops": 24440854208,
+        "scale_operations": 0,
+        "acc": 93.0,
+        "logit_mse": 1.0416256103515624,
+        "ftbc_parameters": 24832,
+        "ftbc_bytes": 99328,
+        "calibration_elapsed": 2.7871296999999995,
+        "inference_elapsed": 0.029009900000000144,
+        "evaluated_samples": 200,
+        "snm_mode": "off",
+        "snm_enabled": false,
+        "a_snm_enabled": null,
+        "source_config": null
+      }
+    },
+    "E_QCFS_FULL_FTBC_STANDARD_SNM_R0": {
+      "1": {
+        "positive_spikes": 7182488,
+        "negative_spikes": 0,
+        "positive_rate": 0.12615374887589928,
+        "negative_rate": 0.0,
+        "total_rate": 0.12615374887589928,
+        "sparsity": 0.8738462511241007,
+        "sops": 12070835072,
+        "scale_operations": 0,
+        "acc": 91.5,
+        "logit_mse": 2.38950244140625,
+        "ftbc_parameters": 12416,
+        "ftbc_bytes": 49664,
+        "calibration_elapsed": 1.7129881999999998,
+        "inference_elapsed": 0.014623500000000789,
+        "evaluated_samples": 200,
+        "snm_mode": "on",
+        "snm_enabled": true,
+        "a_snm_enabled": null,
+        "source_config": null
+      },
+      "2": {
+        "positive_spikes": 14324292,
+        "negative_spikes": 14776,
+        "positive_rate": 0.12579646048785972,
+        "negative_rate": 0.00012976337679856115,
+        "total_rate": 0.12592622386465827,
+        "sparsity": 0.8740737761353418,
+        "sops": 24473518912,
+        "scale_operations": 0,
+        "acc": 93.0,
+        "logit_mse": 1.05110693359375,
+        "ftbc_parameters": 24832,
+        "ftbc_bytes": 99328,
+        "calibration_elapsed": 2.7871296999999995,
+        "inference_elapsed": 0.03253679999999903,
+        "evaluated_samples": 200,
+        "snm_mode": "on",
+        "snm_enabled": true,
+        "a_snm_enabled": null,
+        "source_config": null
+      }
+    },
+    "F_QCFS_FULL_FTBC_ASNM_R0": {
+      "1": {
+        "positive_spikes": 7182488,
+        "negative_spikes": 0,
+        "positive_rate": 0.12615374887589928,
+        "negative_rate": 0.0,
+        "total_rate": 0.12615374887589928,
+        "sparsity": 0.8738462511241007,
+        "sops": 12070835072,
+        "scale_operations": 0,
+        "acc": 91.5,
+        "logit_mse": 2.38950244140625,
+        "ftbc_parameters": 12416,
+        "ftbc_bytes": 49664,
+        "calibration_elapsed": 1.7129881999999998,
+        "inference_elapsed": 0.016123600000000238,
+        "evaluated_samples": 200,
+        "snm_mode": "a_snm",
+        "snm_enabled": false,
+        "a_snm_enabled": false,
+        "source_config": "D_QCFS_FULL_FTBC_R0",
+        "a_snm_selection_elapsed": 0.7264205000000006
+      },
+      "2": {
+        "positive_spikes": 14324292,
+        "negative_spikes": 14776,
+        "positive_rate": 0.12579646048785972,
+        "negative_rate": 0.00012976337679856115,
+        "total_rate": 0.12592622386465827,
+        "sparsity": 0.8740737761353418,
+        "sops": 24473518912,
+        "scale_operations": 0,
+        "acc": 93.0,
+        "logit_mse": 1.05110693359375,
+        "ftbc_parameters": 24832,
+        "ftbc_bytes": 99328,
+        "calibration_elapsed": 2.7871296999999995,
+        "inference_elapsed": 0.03253679999999903,
+        "evaluated_samples": 200,
+        "snm_mode": "a_snm",
+        "snm_enabled": true,
+        "a_snm_enabled": true,
+        "source_config": "E_QCFS_FULL_FTBC_STANDARD_SNM_R0",
+        "a_snm_selection_elapsed": 0.7264205000000006
+      }
+    }
+  },
+  "layers": {
+    "A_QCFS_R0": {
+      "1": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2043267,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2006763,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2043267,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2043267
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 713286,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2006763,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            2006763
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 466121,
+          "negative_spikes": 0,
+          "input_positive_spikes": 713286,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            713286
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 281447,
+          "negative_spikes": 0,
+          "input_positive_spikes": 466121,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            466121
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 209158,
+          "negative_spikes": 0,
+          "input_positive_spikes": 281447,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            281447
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 178563,
+          "negative_spikes": 0,
+          "input_positive_spikes": 209158,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            209158
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 92301,
+          "negative_spikes": 0,
+          "input_positive_spikes": 178563,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            178563
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 138518,
+          "negative_spikes": 0,
+          "input_positive_spikes": 92301,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            92301
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 212483,
+          "negative_spikes": 0,
+          "input_positive_spikes": 138518,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            138518
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 153677,
+          "negative_spikes": 0,
+          "input_positive_spikes": 212483,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            212483
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 142215,
+          "negative_spikes": 0,
+          "input_positive_spikes": 153677,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            153677
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 105850,
+          "negative_spikes": 0,
+          "input_positive_spikes": 142215,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            142215
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 121262,
+          "negative_spikes": 0,
+          "input_positive_spikes": 105850,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105850
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 140571,
+          "negative_spikes": 0,
+          "input_positive_spikes": 121262,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            121262
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ],
+      "2": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 4259704,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0,
+            0
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 3692159,
+          "negative_spikes": 0,
+          "input_positive_spikes": 4259704,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2043267,
+            2216437
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 1500600,
+          "negative_spikes": 0,
+          "input_positive_spikes": 3692159,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            2006763,
+            1685396
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 968605,
+          "negative_spikes": 0,
+          "input_positive_spikes": 1500600,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            713286,
+            787314
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 594370,
+          "negative_spikes": 0,
+          "input_positive_spikes": 968605,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            466121,
+            502484
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 426706,
+          "negative_spikes": 0,
+          "input_positive_spikes": 594370,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            281447,
+            312923
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 360766,
+          "negative_spikes": 0,
+          "input_positive_spikes": 426706,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            209158,
+            217548
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 199665,
+          "negative_spikes": 0,
+          "input_positive_spikes": 360766,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            178563,
+            182203
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 287173,
+          "negative_spikes": 0,
+          "input_positive_spikes": 199665,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            92301,
+            107364
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 521660,
+          "negative_spikes": 0,
+          "input_positive_spikes": 287173,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            138518,
+            148655
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 329060,
+          "negative_spikes": 0,
+          "input_positive_spikes": 521660,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            212483,
+            309177
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 298772,
+          "negative_spikes": 0,
+          "input_positive_spikes": 329060,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            153677,
+            175383
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 216992,
+          "negative_spikes": 0,
+          "input_positive_spikes": 298772,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            142215,
+            156557
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 322524,
+          "negative_spikes": 0,
+          "input_positive_spikes": 216992,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105850,
+            111142
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 383524,
+          "negative_spikes": 0,
+          "input_positive_spikes": 322524,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            121262,
+            201262
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ]
+    },
+    "B_QCFS_STANDARD_SNM_R0": {
+      "1": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2043267,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2006763,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2043267,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2043267
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 713286,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2006763,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            2006763
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 466121,
+          "negative_spikes": 0,
+          "input_positive_spikes": 713286,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            713286
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 281447,
+          "negative_spikes": 0,
+          "input_positive_spikes": 466121,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            466121
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 209158,
+          "negative_spikes": 0,
+          "input_positive_spikes": 281447,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            281447
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 178563,
+          "negative_spikes": 0,
+          "input_positive_spikes": 209158,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            209158
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 92301,
+          "negative_spikes": 0,
+          "input_positive_spikes": 178563,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            178563
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 138518,
+          "negative_spikes": 0,
+          "input_positive_spikes": 92301,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            92301
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 212483,
+          "negative_spikes": 0,
+          "input_positive_spikes": 138518,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            138518
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 153677,
+          "negative_spikes": 0,
+          "input_positive_spikes": 212483,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            212483
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 142215,
+          "negative_spikes": 0,
+          "input_positive_spikes": 153677,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            153677
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 105850,
+          "negative_spikes": 0,
+          "input_positive_spikes": 142215,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            142215
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 121262,
+          "negative_spikes": 0,
+          "input_positive_spikes": 105850,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105850
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 140571,
+          "negative_spikes": 0,
+          "input_positive_spikes": 121262,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            121262
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ],
+      "2": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 4259704,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0,
+            0
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 3692159,
+          "negative_spikes": 15736,
+          "input_positive_spikes": 4259704,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2043267,
+            2216437
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 1516740,
+          "negative_spikes": 1044,
+          "input_positive_spikes": 3692159,
+          "input_negative_spikes": 15736,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            2006763,
+            1701132
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 969626,
+          "negative_spikes": 1477,
+          "input_positive_spikes": 1516740,
+          "input_negative_spikes": 1044,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            713286,
+            804498
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 594313,
+          "negative_spikes": 342,
+          "input_positive_spikes": 969626,
+          "input_negative_spikes": 1477,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            466121,
+            504982
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 427427,
+          "negative_spikes": 724,
+          "input_positive_spikes": 594313,
+          "input_negative_spikes": 342,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            281447,
+            313208
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 361708,
+          "negative_spikes": 704,
+          "input_positive_spikes": 427427,
+          "input_negative_spikes": 724,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            209158,
+            218993
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 200070,
+          "negative_spikes": 170,
+          "input_positive_spikes": 361708,
+          "input_negative_spikes": 704,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            178563,
+            183849
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 288135,
+          "negative_spikes": 712,
+          "input_positive_spikes": 200070,
+          "input_negative_spikes": 170,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            92301,
+            107939
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 522120,
+          "negative_spikes": 21,
+          "input_positive_spikes": 288135,
+          "input_negative_spikes": 712,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            138518,
+            150329
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 328929,
+          "negative_spikes": 1,
+          "input_positive_spikes": 522120,
+          "input_negative_spikes": 21,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            212483,
+            309658
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 298307,
+          "negative_spikes": 1,
+          "input_positive_spikes": 328929,
+          "input_negative_spikes": 1,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            153677,
+            175253
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 216815,
+          "negative_spikes": 0,
+          "input_positive_spikes": 298307,
+          "input_negative_spikes": 1,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            142215,
+            156093
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 322487,
+          "negative_spikes": 0,
+          "input_positive_spikes": 216815,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105850,
+            110965
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 383696,
+          "negative_spikes": 0,
+          "input_positive_spikes": 322487,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            121262,
+            201225
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ]
+    },
+    "C_QCFS_ASNM_R0": {
+      "1": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2043267,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2006763,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2043267,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2043267
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 713286,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2006763,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            2006763
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 466121,
+          "negative_spikes": 0,
+          "input_positive_spikes": 713286,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            713286
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 281447,
+          "negative_spikes": 0,
+          "input_positive_spikes": 466121,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            466121
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 209158,
+          "negative_spikes": 0,
+          "input_positive_spikes": 281447,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            281447
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 178563,
+          "negative_spikes": 0,
+          "input_positive_spikes": 209158,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            209158
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 92301,
+          "negative_spikes": 0,
+          "input_positive_spikes": 178563,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            178563
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 138518,
+          "negative_spikes": 0,
+          "input_positive_spikes": 92301,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            92301
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 212483,
+          "negative_spikes": 0,
+          "input_positive_spikes": 138518,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            138518
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 153677,
+          "negative_spikes": 0,
+          "input_positive_spikes": 212483,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            212483
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 142215,
+          "negative_spikes": 0,
+          "input_positive_spikes": 153677,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            153677
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 105850,
+          "negative_spikes": 0,
+          "input_positive_spikes": 142215,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            142215
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 121262,
+          "negative_spikes": 0,
+          "input_positive_spikes": 105850,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105850
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 140571,
+          "negative_spikes": 0,
+          "input_positive_spikes": 121262,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            121262
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ],
+      "2": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 4259704,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0,
+            0
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 3692159,
+          "negative_spikes": 15736,
+          "input_positive_spikes": 4259704,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2043267,
+            2216437
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 1516740,
+          "negative_spikes": 1044,
+          "input_positive_spikes": 3692159,
+          "input_negative_spikes": 15736,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            2006763,
+            1701132
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 969626,
+          "negative_spikes": 1477,
+          "input_positive_spikes": 1516740,
+          "input_negative_spikes": 1044,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            713286,
+            804498
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 594313,
+          "negative_spikes": 342,
+          "input_positive_spikes": 969626,
+          "input_negative_spikes": 1477,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            466121,
+            504982
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 427427,
+          "negative_spikes": 724,
+          "input_positive_spikes": 594313,
+          "input_negative_spikes": 342,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            281447,
+            313208
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 361708,
+          "negative_spikes": 704,
+          "input_positive_spikes": 427427,
+          "input_negative_spikes": 724,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            209158,
+            218993
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 200070,
+          "negative_spikes": 170,
+          "input_positive_spikes": 361708,
+          "input_negative_spikes": 704,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            178563,
+            183849
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 288135,
+          "negative_spikes": 712,
+          "input_positive_spikes": 200070,
+          "input_negative_spikes": 170,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            92301,
+            107939
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 522120,
+          "negative_spikes": 21,
+          "input_positive_spikes": 288135,
+          "input_negative_spikes": 712,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            138518,
+            150329
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 328929,
+          "negative_spikes": 1,
+          "input_positive_spikes": 522120,
+          "input_negative_spikes": 21,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            212483,
+            309658
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 298307,
+          "negative_spikes": 1,
+          "input_positive_spikes": 328929,
+          "input_negative_spikes": 1,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            153677,
+            175253
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 216815,
+          "negative_spikes": 0,
+          "input_positive_spikes": 298307,
+          "input_negative_spikes": 1,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            142215,
+            156093
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 322487,
+          "negative_spikes": 0,
+          "input_positive_spikes": 216815,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105850,
+            110965
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 383696,
+          "negative_spikes": 0,
+          "input_positive_spikes": 322487,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            121262,
+            201225
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ]
+    },
+    "D_QCFS_FULL_FTBC_R0": {
+      "1": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2124040,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 1876969,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2124040,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2124040
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 765336,
+          "negative_spikes": 0,
+          "input_positive_spikes": 1876969,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            1876969
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 509020,
+          "negative_spikes": 0,
+          "input_positive_spikes": 765336,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            765336
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 309174,
+          "negative_spikes": 0,
+          "input_positive_spikes": 509020,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            509020
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 202467,
+          "negative_spikes": 0,
+          "input_positive_spikes": 309174,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            309174
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 164024,
+          "negative_spikes": 0,
+          "input_positive_spikes": 202467,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            202467
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 87629,
+          "negative_spikes": 0,
+          "input_positive_spikes": 164024,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            164024
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 135432,
+          "negative_spikes": 0,
+          "input_positive_spikes": 87629,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            87629
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 263609,
+          "negative_spikes": 0,
+          "input_positive_spikes": 135432,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            135432
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 162055,
+          "negative_spikes": 0,
+          "input_positive_spikes": 263609,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            263609
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 147283,
+          "negative_spikes": 0,
+          "input_positive_spikes": 162055,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            162055
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 105158,
+          "negative_spikes": 0,
+          "input_positive_spikes": 147283,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            147283
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 145824,
+          "negative_spikes": 0,
+          "input_positive_spikes": 105158,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105158
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 184468,
+          "negative_spikes": 0,
+          "input_positive_spikes": 145824,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            145824
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ],
+      "2": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 4246167,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0,
+            0
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 3577617,
+          "negative_spikes": 0,
+          "input_positive_spikes": 4246167,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2124040,
+            2122127
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 1526175,
+          "negative_spikes": 0,
+          "input_positive_spikes": 3577617,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            1876969,
+            1700648
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 991087,
+          "negative_spikes": 0,
+          "input_positive_spikes": 1526175,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            765336,
+            760839
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 602065,
+          "negative_spikes": 0,
+          "input_positive_spikes": 991087,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            509020,
+            482067
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 405037,
+          "negative_spikes": 0,
+          "input_positive_spikes": 602065,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            309174,
+            292891
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 340238,
+          "negative_spikes": 0,
+          "input_positive_spikes": 405037,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            202467,
+            202570
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 191844,
+          "negative_spikes": 0,
+          "input_positive_spikes": 340238,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            164024,
+            176214
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 280510,
+          "negative_spikes": 0,
+          "input_positive_spikes": 191844,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            87629,
+            104215
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 590546,
+          "negative_spikes": 0,
+          "input_positive_spikes": 280510,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            135432,
+            145078
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 320174,
+          "negative_spikes": 0,
+          "input_positive_spikes": 590546,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            263609,
+            326937
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 293131,
+          "negative_spikes": 0,
+          "input_positive_spikes": 320174,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            162055,
+            158119
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 208581,
+          "negative_spikes": 0,
+          "input_positive_spikes": 293131,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            147284,
+            145847
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 333386,
+          "negative_spikes": 0,
+          "input_positive_spikes": 208581,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105156,
+            103425
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 410146,
+          "negative_spikes": 0,
+          "input_positive_spikes": 333386,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            145830,
+            187556
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ]
+    },
+    "E_QCFS_FULL_FTBC_STANDARD_SNM_R0": {
+      "1": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2124040,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 1876969,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2124040,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2124040
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 765336,
+          "negative_spikes": 0,
+          "input_positive_spikes": 1876969,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            1876969
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 509020,
+          "negative_spikes": 0,
+          "input_positive_spikes": 765336,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            765336
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 309174,
+          "negative_spikes": 0,
+          "input_positive_spikes": 509020,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            509020
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 202467,
+          "negative_spikes": 0,
+          "input_positive_spikes": 309174,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            309174
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 164024,
+          "negative_spikes": 0,
+          "input_positive_spikes": 202467,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            202467
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 87629,
+          "negative_spikes": 0,
+          "input_positive_spikes": 164024,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            164024
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 135432,
+          "negative_spikes": 0,
+          "input_positive_spikes": 87629,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            87629
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 263609,
+          "negative_spikes": 0,
+          "input_positive_spikes": 135432,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            135432
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 162055,
+          "negative_spikes": 0,
+          "input_positive_spikes": 263609,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            263609
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 147283,
+          "negative_spikes": 0,
+          "input_positive_spikes": 162055,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            162055
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 105158,
+          "negative_spikes": 0,
+          "input_positive_spikes": 147283,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            147283
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 145824,
+          "negative_spikes": 0,
+          "input_positive_spikes": 105158,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105158
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 184468,
+          "negative_spikes": 0,
+          "input_positive_spikes": 145824,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            145824
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ],
+      "2": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 4246167,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0,
+            0
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 3577617,
+          "negative_spikes": 10661,
+          "input_positive_spikes": 4246167,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2124040,
+            2122127
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 1533072,
+          "negative_spikes": 887,
+          "input_positive_spikes": 3577617,
+          "input_negative_spikes": 10661,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            1876969,
+            1711309
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 992239,
+          "negative_spikes": 1265,
+          "input_positive_spikes": 1533072,
+          "input_negative_spikes": 887,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            765336,
+            768623
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 602259,
+          "negative_spikes": 242,
+          "input_positive_spikes": 992239,
+          "input_negative_spikes": 1265,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            509020,
+            484484
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 404827,
+          "negative_spikes": 445,
+          "input_positive_spikes": 602259,
+          "input_negative_spikes": 242,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            309174,
+            293327
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 340474,
+          "negative_spikes": 447,
+          "input_positive_spikes": 404827,
+          "input_negative_spikes": 445,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            202467,
+            202805
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 192258,
+          "negative_spikes": 130,
+          "input_positive_spikes": 340474,
+          "input_negative_spikes": 447,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            164024,
+            176897
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 279828,
+          "negative_spikes": 688,
+          "input_positive_spikes": 192258,
+          "input_negative_spikes": 130,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            87629,
+            104759
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 590035,
+          "negative_spikes": 6,
+          "input_positive_spikes": 279828,
+          "input_negative_spikes": 688,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            135432,
+            145084
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 320253,
+          "negative_spikes": 0,
+          "input_positive_spikes": 590035,
+          "input_negative_spikes": 6,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            263609,
+            326432
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 293088,
+          "negative_spikes": 5,
+          "input_positive_spikes": 320253,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            162055,
+            158198
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 208823,
+          "negative_spikes": 0,
+          "input_positive_spikes": 293088,
+          "input_negative_spikes": 5,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            147284,
+            145809
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 333329,
+          "negative_spikes": 0,
+          "input_positive_spikes": 208823,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105156,
+            103667
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 410023,
+          "negative_spikes": 0,
+          "input_positive_spikes": 333329,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            145830,
+            187499
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ]
+    },
+    "F_QCFS_FULL_FTBC_ASNM_R0": {
+      "1": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 2124040,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 1876969,
+          "negative_spikes": 0,
+          "input_positive_spikes": 2124040,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2124040
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 765336,
+          "negative_spikes": 0,
+          "input_positive_spikes": 1876969,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            1876969
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 509020,
+          "negative_spikes": 0,
+          "input_positive_spikes": 765336,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            765336
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 309174,
+          "negative_spikes": 0,
+          "input_positive_spikes": 509020,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            509020
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 202467,
+          "negative_spikes": 0,
+          "input_positive_spikes": 309174,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            309174
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 164024,
+          "negative_spikes": 0,
+          "input_positive_spikes": 202467,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            202467
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 87629,
+          "negative_spikes": 0,
+          "input_positive_spikes": 164024,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            164024
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 135432,
+          "negative_spikes": 0,
+          "input_positive_spikes": 87629,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            87629
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 263609,
+          "negative_spikes": 0,
+          "input_positive_spikes": 135432,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            135432
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 162055,
+          "negative_spikes": 0,
+          "input_positive_spikes": 263609,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            263609
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 147283,
+          "negative_spikes": 0,
+          "input_positive_spikes": 162055,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            162055
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 1,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 105158,
+          "negative_spikes": 0,
+          "input_positive_spikes": 147283,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            147283
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 145824,
+          "negative_spikes": 0,
+          "input_positive_spikes": 105158,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105158
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 1,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 184468,
+          "negative_spikes": 0,
+          "input_positive_spikes": 145824,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            145824
+          ],
+          "time_scales": [
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ],
+      "2": [
+        {
+          "name": "layer1.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 4246167,
+          "negative_spikes": 0,
+          "input_positive_spikes": 0,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            0,
+            0
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer1.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 13107200,
+          "positive_spikes": 3577617,
+          "negative_spikes": 10661,
+          "input_positive_spikes": 4246167,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 576,
+          "input_spikes_by_time": [
+            2124040,
+            2122127
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 1533072,
+          "negative_spikes": 887,
+          "input_positive_spikes": 3577617,
+          "input_negative_spikes": 10661,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            1876969,
+            1711309
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer2.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 6553600,
+          "positive_spikes": 992239,
+          "negative_spikes": 1265,
+          "input_positive_spikes": 1533072,
+          "input_negative_spikes": 887,
+          "synaptic_ops_per_input_spike": 1152,
+          "input_spikes_by_time": [
+            765336,
+            768623
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 602259,
+          "negative_spikes": 242,
+          "input_positive_spikes": 992239,
+          "input_negative_spikes": 1265,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            509020,
+            484484
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 404827,
+          "negative_spikes": 445,
+          "input_positive_spikes": 602259,
+          "input_negative_spikes": 242,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            309174,
+            293327
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer3.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 3276800,
+          "positive_spikes": 340474,
+          "negative_spikes": 447,
+          "input_positive_spikes": 404827,
+          "input_negative_spikes": 445,
+          "synaptic_ops_per_input_spike": 2304,
+          "input_spikes_by_time": [
+            202467,
+            202805
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 192258,
+          "negative_spikes": 130,
+          "input_positive_spikes": 340474,
+          "input_negative_spikes": 447,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            164024,
+            176897
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 279828,
+          "negative_spikes": 688,
+          "input_positive_spikes": 192258,
+          "input_negative_spikes": 130,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            87629,
+            104759
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer4.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 1638400,
+          "positive_spikes": 590035,
+          "negative_spikes": 6,
+          "input_positive_spikes": 279828,
+          "input_negative_spikes": 688,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            135432,
+            145084
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.2",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 320253,
+          "negative_spikes": 0,
+          "input_positive_spikes": 590035,
+          "input_negative_spikes": 6,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            263609,
+            326432
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.6",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 293088,
+          "negative_spikes": 5,
+          "input_positive_spikes": 320253,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            162055,
+            158198
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "layer5.10",
+          "kind": "Conv2d",
+          "time_steps": 2,
+          "output_neurons_per_step": 409600,
+          "positive_spikes": 208823,
+          "negative_spikes": 0,
+          "input_positive_spikes": 293088,
+          "input_negative_spikes": 5,
+          "synaptic_ops_per_input_spike": 4608,
+          "input_spikes_by_time": [
+            147284,
+            145809
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.2",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 333329,
+          "negative_spikes": 0,
+          "input_positive_spikes": 208823,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            105156,
+            103667
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        },
+        {
+          "name": "classifier.5",
+          "kind": "Linear",
+          "time_steps": 2,
+          "output_neurons_per_step": 819200,
+          "positive_spikes": 410023,
+          "negative_spikes": 0,
+          "input_positive_spikes": 333329,
+          "input_negative_spikes": 0,
+          "synaptic_ops_per_input_spike": 4096,
+          "input_spikes_by_time": [
+            145830,
+            187499
+          ],
+          "time_scales": [
+            1.0,
+            1.0
+          ],
+          "synaptic_ops_override": null,
+          "has_spike_output": true
+        }
+      ]
+    }
+  },
+  "equivalence_checks": [
+    {
+      "config": "C_QCFS_ASNM_R0",
+      "time_steps": 1,
+      "source": "A_QCFS_R0",
+      "exact": true
+    },
+    {
+      "config": "F_QCFS_FULL_FTBC_ASNM_R0",
+      "time_steps": 1,
+      "source": "D_QCFS_FULL_FTBC_R0",
+      "exact": true
+    },
+    {
+      "config": "C_QCFS_ASNM_R0",
+      "time_steps": 2,
+      "source": "B_QCFS_STANDARD_SNM_R0",
+      "exact": true
+    },
+    {
+      "config": "F_QCFS_FULL_FTBC_ASNM_R0",
+      "time_steps": 2,
+      "source": "E_QCFS_FULL_FTBC_STANDARD_SNM_R0",
+      "exact": true
+    }
+  ]
+}
