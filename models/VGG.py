@@ -305,6 +305,14 @@ class VGG_Signed(nn.Module):
             if isinstance(m, SignedIF):
                 m.set_snm_negative_margin(margin)
 
+    def set_snm_mode(self, mode, start=1.25, end=0.5, reference=8.0):
+        """Set standard SNM or the horizon-annealed variant."""
+        for m in self.modules():
+            if isinstance(m, SignedIF):
+                m.set_snm_mode(
+                    mode, start=start, end=end, reference=reference
+                )
+
     def set_ftbc_mode(self, mode):
         """Set the FTBC representation used by every SignedIF layer."""
         for m in self.modules():

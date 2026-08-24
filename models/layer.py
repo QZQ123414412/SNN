@@ -132,6 +132,10 @@ class SignedIF(nn.Module):
         self.parity_anchor_bias = None
         self.enable_state_bias = True
         self.snm_negative_margin = 0.0
+        self.snm_mode = "standard"
+        self.ha_snm_start = 1.25
+        self.ha_snm_end = 0.5
+        self.ha_snm_reference = 8.0
         self.coding_mode = "rate"
         self.refinement_schedule = "geometric"
         self.refinement_ratio = 2.0
@@ -189,8 +193,51 @@ class SignedIF(nn.Module):
             raise ValueError("SNM negative margin must be non-negative")
         self.snm_negative_margin = margin
 
-    def effective_negative_threshold(self):
-        return self.neg_thresh.data * (1.0 + self.snm_negative_margin)
+    def set_snm_mode(self, mode, start=1.25, end=0.5, reference=8.0):
+        """Configure standard or horizon-annealed negative-spike decisions.
+
+        HA-SNM starts with a conservative negative threshold and linearly
+        relaxes it toward the inference horizon.  It reuses ``mem`` and
+        ``transmitted`` and therefore adds no dense per-neuron state.
+        """
+        if mode not in {"standard", "horizon_annealed"}:
+            raise ValueError(f"Unsupported SNM mode: {mode}")
+        start = float(start)
+        end = float(end)
+        reference = float(reference)
+        if start <= 0 or end <= 0:
+            raise ValueError("HA-SNM threshold multipliers must be positive")
+        if start < end:
+            raise ValueError("HA-SNM start multiplier must not be below end")
+        if reference <= 0:
+            raise ValueError("HA-SNM reference horizon must be positive")
+        self.snm_mode = mode
+        self.ha_snm_start = start
+        self.ha_snm_end = end
+        self.ha_snm_reference = reference
+
+    def snm_threshold_multiplier(self, t=None):
+        margin_scale = 1.0 + self.snm_negative_margin
+        if self.snm_mode == "standard" or t is None or int(self.T) <= 1:
+            return margin_scale
+        horizon_scale = min(self.ha_snm_reference / float(int(self.T)), 1.0)
+        effective_start = 1.0 + (self.ha_snm_start - 1.0) * horizon_scale
+        effective_end = 1.0 + (self.ha_snm_end - 1.0) * horizon_scale
+        remaining_fraction = float(int(self.T) - 1 - int(t)) / float(
+            int(self.T) - 1
+        )
+        annealed = effective_end + (
+            effective_start - effective_end
+        ) * remaining_fraction
+        return margin_scale * annealed
+
+    def effective_negative_threshold(self, t=None):
+        return self.neg_thresh.data * self.snm_threshold_multiplier(t)
+
+    def negative_spike_value(self, t=None):
+        if self.snm_mode == "horizon_annealed":
+            return self.neg_thresh.data
+        return self.effective_negative_threshold(t)
 
     def get_time_scales(self, reference):
         schedule = (
@@ -500,8 +547,11 @@ class SignedIF(nn.Module):
 
             spike_pot = []
             pos_thresh = self.thresh.data
-            neg_thresh = self.effective_negative_threshold()
-
+            standard_neg_thresh = (
+                self.effective_negative_threshold()
+                if self.snm_mode == "standard"
+                else None
+            )
             for t in range(self.T):
                 if self.uses_successive_refinement():
                     if t == 0:
@@ -566,11 +616,17 @@ class SignedIF(nn.Module):
 
                 # ============== [修改] SNM 开关：可关闭负脉冲 ==============
                 if self.enable_signed:
+                    if standard_neg_thresh is None:
+                        neg_thresh = self.effective_negative_threshold(t)
+                        neg_value = self.negative_spike_value(t)
+                    else:
+                        neg_thresh = standard_neg_thresh
+                        neg_value = standard_neg_thresh
                     # Negative spike gated by memory (原 SNM 逻辑)
                     neg_spike = torch.where(
                         (self.mem <= neg_thresh) & positive_state,
-                        neg_thresh,
-                        neg_thresh.new_zeros(()),
+                        neg_value,
+                        neg_value.new_zeros(()),
                     )
                 else:
                     # 关闭时退化为标准 QCFS 正脉冲

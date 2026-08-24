@@ -181,6 +181,13 @@ class ResNet4Cifar(nn.Module):
             if isinstance(module, SignedIF):
                 module.set_snm_negative_margin(margin)
 
+    def set_snm_mode(self, mode, start=1.25, end=0.5, reference=8.0):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_snm_mode(
+                    mode, start=start, end=end, reference=reference
+                )
+
     def set_ftbc_mode(self, mode):
         for module in self.modules():
             if isinstance(module, SignedIF):
