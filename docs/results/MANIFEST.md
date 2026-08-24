@@ -15,6 +15,7 @@
 |---|---|---|---|---|
 | `baseline/accuracy_only/cifar10/ABLATION_RESULTS_cifar10_v2.md` | CIFAR-10/VGG16，QCFS、SNM、R0、FTBC 六配置准确率消融 | `scripts/experiments/run_ablation.py` | 直接 | 历史基线 |
 | `baseline/accuracy_only/cifar10/ABLATION_RESULTS_cifar10_T64.md` | 上述六配置的 CIFAR-10 T=64 补充结果 | `scripts/experiments/run_ablation.py` | 直接 | 历史补充 |
+| `baseline/accuracy_only/cifar10/RESNET20_QCFS_L4_PAPER_ALIGNED_RETRAIN.md` | CIFAR-10/ResNet20 QCFS-L4、batch size 300、paper_era profile 的 300-epoch 论文口径对齐重训；记录测试集最优 checkpoint、严格重载准确率和 SHA256 | `scripts/train/main_train.py` 与训练元数据 | 人工 | 正式基线权重 |
 | `baseline/accuracy_only/cifar100/ABLATION_RESULTS.md` | CIFAR-100/VGG16，QCFS、SNM、R0、FTBC 六配置早期准确率消融 | `scripts/experiments/run_ablation.py` | 直接 | 历史基线 |
 | `baseline/accuracy_only/cifar100/ABLATION_RESULTS_cifar100_v2.md` | 六配置 CIFAR-100 准确率复跑 | `scripts/experiments/run_ablation.py` | 直接 | 历史基线 |
 | `baseline/accuracy_only/cifar100/ABLATION_RESULTS_cifar100_T64.md` | 上述六配置的 CIFAR-100 T=64 补充结果 | `scripts/experiments/run_ablation.py` | 直接 | 历史补充 |
