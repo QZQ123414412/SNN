@@ -31,6 +31,46 @@ def _extract_state_dict(checkpoint):
     return checkpoint
 
 
+def _normalize_legacy_threshold_keys(state_dict):
+    """Return canonical QCFS keys without weakening strict model loading.
+
+    Early QCFS checkpoints stored each activation threshold as ``.up``.  The
+    current IF/SignedIF modules call the same tensor ``.thresh``.  Translate
+    only that exact suffix and reject collisions so a malformed checkpoint
+    cannot silently choose one of two threshold tensors.
+    """
+    normalized = {}
+    legacy_threshold_keys = 0
+    for key, value in state_dict.items():
+        canonical_key = key[:-3] + ".thresh" if key.endswith(".up") else key
+        if canonical_key in normalized:
+            raise RuntimeError(
+                "Checkpoint contains colliding threshold keys after legacy "
+                f"normalization: {key!r} -> {canonical_key!r}"
+            )
+        normalized[canonical_key] = value
+        legacy_threshold_keys += int(canonical_key != key)
+    return normalized, legacy_threshold_keys
+
+
+def _normalize_legacy_module_names(state_dict, architecture):
+    """Translate only known architecture-local legacy module names."""
+    normalized = {}
+    renamed = 0
+    for key, value in state_dict.items():
+        canonical_key = key
+        if architecture == "resnet34":
+            canonical_key = canonical_key.replace(".relu.", ".act.")
+        if canonical_key in normalized:
+            raise RuntimeError(
+                "Checkpoint contains colliding module keys after legacy "
+                f"normalization: {key!r} -> {canonical_key!r}"
+            )
+        normalized[canonical_key] = value
+        renamed += int(canonical_key != key)
+    return normalized, renamed
+
+
 def load_qcfs_pair(checkpoint_path, dataset, architecture, device):
     """Load one QCFS checkpoint into exact IF and SignedIF architectures."""
     checkpoint_path = Path(checkpoint_path).resolve()
@@ -38,7 +78,12 @@ def load_qcfs_pair(checkpoint_path, dataset, architecture, device):
         raise FileNotFoundError(f"QCFS checkpoint not found: {checkpoint_path}")
 
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    state_dict = _extract_state_dict(checkpoint)
+    state_dict, legacy_threshold_keys = _normalize_legacy_threshold_keys(
+        _extract_state_dict(checkpoint)
+    )
+    state_dict, legacy_module_keys = _normalize_legacy_module_names(
+        state_dict, architecture
+    )
 
     ann = modelpool(architecture, dataset)
     try:
@@ -85,5 +130,7 @@ def load_qcfs_pair(checkpoint_path, dataset, architecture, device):
         "dataset": dataset,
         "architecture": architecture,
         "qcfs_layers": len(threshold_names),
+        "legacy_threshold_keys_normalized": legacy_threshold_keys,
+        "legacy_module_keys_normalized": legacy_module_keys,
     }
     return ann, snn, metadata

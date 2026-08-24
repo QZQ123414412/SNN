@@ -140,6 +140,32 @@ class QcfsCheckpointTest(unittest.TestCase):
             if path.exists():
                 path.unlink()
 
+    def test_legacy_up_threshold_checkpoint_is_normalized_then_strictly_loaded(self):
+        source = modelpool("vgg16", "cifar10")
+        legacy_state = OrderedDict()
+        legacy_count = 0
+        for key, value in source.state_dict().items():
+            legacy_key = key[:-7] + ".up" if key.endswith(".thresh") else key
+            legacy_count += int(legacy_key != key)
+            legacy_state[legacy_key] = value
+        path = self._checkpoint_path("legacy_vgg16_qcfs")
+        try:
+            torch.save(legacy_state, path)
+            ann, snn, metadata = load_qcfs_pair(
+                path, "cifar10", "vgg16", torch.device("cpu")
+            )
+        finally:
+            if path.exists():
+                path.unlink()
+
+        pairs = match_calibration_layers(ann, snn)
+        self.assertGreater(legacy_count, 0)
+        self.assertEqual(metadata["legacy_threshold_keys_normalized"], legacy_count)
+        self.assertEqual(metadata["qcfs_layers"], legacy_count)
+        for _, ann_layer, snn_layer in pairs:
+            self.assertTrue(torch.equal(ann_layer.thresh, snn_layer.thresh))
+            self.assertTrue(torch.equal(snn_layer.neg_thresh, -ann_layer.thresh))
+
 
 class ResNet20ProtocolTest(unittest.TestCase):
     def _args(self, **changes):

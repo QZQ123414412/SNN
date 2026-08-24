@@ -43,16 +43,17 @@ class BasicBlock(nn.Module):
         return self.act(x)
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_block, num_classes=100):
+    def __init__(self, block, num_block, num_classes=100, neuron_type=IF):
         super().__init__()
         self.in_channels = 64
+        self.neuron_type = neuron_type
         self.T = 0
         self.merge = MergeTemporalDim(0)
         self.expand = ExpandTemporalDim(0)
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            IF())
+            neuron_type())
         # we use a different inputsize than the original paper
         # so conv2_x's stride is 1
         self.conv2_x = self._make_layer(block, 64, num_block[0], 1)
@@ -68,17 +69,27 @@ class ResNet(nn.Module):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
-            layers.append(block(self.in_channels, out_channels, stride))
+            layers.append(
+                block(
+                    self.in_channels,
+                    out_channels,
+                    stride,
+                    neuron_type=self.neuron_type,
+                )
+            )
             self.in_channels = out_channels * block.expansion
         return nn.Sequential(*layers)
     
     def set_T(self, T):
         self.T = T
         for module in self.modules():
-            if isinstance(module, (IF, ExpandTemporalDim)):
+            if isinstance(module, (IF, SignedIF, ExpandTemporalDim)):
                 module.T = T
-            if isinstance(module, IF):
-                print(module.thresh)
+            if isinstance(module, SignedIF):
+                module.init_mem()
+                module.time_scales = None
+                module._time_scale_cache_key = None
+                module.reset_stats()
         return
 
     def set_L(self, L):
@@ -91,6 +102,58 @@ class ResNet(nn.Module):
         for module in self.modules():
             if isinstance(module, IF):
                 module.set_quantization_profile(profile)
+
+    def set_signed(self, enabled):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.enable_signed = bool(enabled)
+
+    def set_r0(self, enabled):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.enable_r0 = bool(enabled)
+
+    def set_snm_negative_margin(self, margin):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_snm_negative_margin(margin)
+
+    def set_snm_mode(self, mode, start=1.25, end=0.5, reference=8.0):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_snm_mode(
+                    mode, start=start, end=end, reference=reference
+                )
+
+    def set_ftbc_mode(self, mode):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_ftbc_mode(mode)
+
+    def set_coding_mode(
+        self,
+        mode,
+        schedule="rate",
+        ratio=1.0,
+        positive_margin=0.5,
+        negative_margin=0.5,
+        r0_mode="legacy_clamp",
+    ):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.set_coding_mode(
+                    mode,
+                    schedule=schedule,
+                    ratio=ratio,
+                    positive_margin=positive_margin,
+                    negative_margin=negative_margin,
+                    r0_mode=r0_mode,
+                )
+
+    def reset_all_bias(self):
+        for module in self.modules():
+            if isinstance(module, SignedIF):
+                module.reset_bias()
 
     def forward(self, x):
         if self.T > 0:
@@ -255,3 +318,12 @@ def resnet20_signed(num_classes=10):
 
 def resnet34(num_classes=10):
     return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes)
+
+
+def resnet34_signed(num_classes=10):
+    return ResNet(
+        BasicBlock,
+        [3, 4, 6, 3],
+        num_classes=num_classes,
+        neuron_type=SignedIF,
+    )

@@ -206,12 +206,14 @@ def collect_signed_spike_stats(model, signed_if_type, conv2d_type, linear_type):
     return stats
 
 
-def collect_resnet20_spike_stats(
+def collect_resnet_spike_stats(
     model,
     signed_if_type,
     conv2d_type,
+    stage_names,
+    architecture,
 ):
-    """Collect activation statistics and graph-aware SOPs for CIFAR ResNet20."""
+    """Collect graph-aware spike statistics for residual basic-block networks."""
     named_modules = dict(model.named_modules())
     signed_modules = {
         name: module
@@ -220,7 +222,7 @@ def collect_resnet20_spike_stats(
     }
 
     expected_names = ["conv1.2"]
-    for stage_name in ("conv2_x", "conv3_x", "conv4_x"):
+    for stage_name in stage_names:
         stage = getattr(model, stage_name)
         for block_index in range(len(stage)):
             prefix = f"{stage_name}.{block_index}"
@@ -231,7 +233,7 @@ def collect_resnet20_spike_stats(
         missing = sorted(set(expected_names) - set(signed_modules))
         unexpected = sorted(set(signed_modules) - set(expected_names))
         raise RuntimeError(
-            "ResNet20 SignedIF topology mismatch: "
+            f"{architecture} SignedIF topology mismatch: "
             f"missing={missing}, unexpected={unexpected}"
         )
 
@@ -291,7 +293,7 @@ def collect_resnet20_spike_stats(
 
     stats = [make_stats("conv1.2")]
     block_input_name = "conv1.2"
-    for stage_name in ("conv2_x", "conv3_x", "conv4_x"):
+    for stage_name in stage_names:
         stage = getattr(model, stage_name)
         for block_index in range(len(stage)):
             prefix = f"{stage_name}.{block_index}"
@@ -376,6 +378,26 @@ def collect_resnet20_spike_stats(
         )
     )
     return stats
+
+
+def collect_resnet20_spike_stats(model, signed_if_type, conv2d_type):
+    return collect_resnet_spike_stats(
+        model,
+        signed_if_type,
+        conv2d_type,
+        stage_names=("conv2_x", "conv3_x", "conv4_x"),
+        architecture="ResNet20",
+    )
+
+
+def collect_resnet34_spike_stats(model, signed_if_type, conv2d_type):
+    return collect_resnet_spike_stats(
+        model,
+        signed_if_type,
+        conv2d_type,
+        stage_names=("conv2_x", "conv3_x", "conv4_x", "conv5_x"),
+        architecture="ResNet34",
+    )
 
 
 def format_spike_stats_report(layer_stats):

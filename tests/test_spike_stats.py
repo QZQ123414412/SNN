@@ -8,6 +8,7 @@ from models.layer import SignedIF
 from scripts.experiments.run_stats_ablation import summarize_layer_stats
 from spike_stats import (
     SpikeLayerStats,
+    collect_resnet34_spike_stats,
     collect_resnet20_spike_stats,
     estimate_conv2d_fanout,
     estimate_linear_fanout,
@@ -146,6 +147,29 @@ class SpikeStatsTest(unittest.TestCase):
         self.assertFalse(by_name["fc"].has_spike_output)
         summary = summarize_layer_stats(stats)
         self.assertEqual(summary["positive_spikes"], 19)
+
+    def test_resnet34_graph_aware_sops_cover_all_residual_stages(self):
+        model = modelpool("resnet34_signed", "imagenet")
+        model.set_T(2)
+        for module in model.modules():
+            if isinstance(module, SignedIF):
+                module.pos_spike_count = 1
+                module.neg_spike_count = 0
+                module.total_neurons = 2
+                module.pos_spike_count_by_time = [1, 0]
+                module.neg_spike_count_by_time = [0, 0]
+
+        stats = collect_resnet34_spike_stats(model, SignedIF, nn.Conv2d)
+        by_name = {item.name: item for item in stats}
+
+        self.assertEqual(len(stats), 34)
+        self.assertIn("conv5_x.2.act", by_name)
+        self.assertEqual(
+            by_name["conv3_x.0.act"].sops,
+            128 * 3 * 3 + 128,
+        )
+        self.assertEqual(by_name["fc"].sops, 1_000)
+        self.assertFalse(by_name["fc"].has_spike_output)
 
 
 if __name__ == "__main__":

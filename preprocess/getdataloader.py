@@ -133,26 +133,69 @@ def GetCifar100(
     )
     return train_dataloader, test_dataloader
 
-def GetImageNet(batchsize):
-    trans_t = transforms.Compose([transforms.RandomResizedCrop(224),
-                                transforms.RandomHorizontalFlip(),
-                                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-                                transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-                                ])
-    
-    trans = transforms.Compose([transforms.Resize(256),
-                            transforms.CenterCrop(224),
-                            transforms.ToTensor(), 
-                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-                            ])
+def imagenet_transforms():
+    train_transform = transforms.Compose([
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(
+            brightness=0.2,
+            contrast=0.2,
+            saturation=0.2,
+            hue=0.1,
+        ),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        ),
+    ])
+    validation_transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        ),
+    ])
+    return train_transform, validation_transform
 
-    root = resolve_dataset_root("ImageNet")
-    train_data = datasets.ImageFolder(root=os.path.join(root, 'train'), transform=trans_t)
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train_data)
-    train_dataloader =DataLoader(train_data, batch_size=batchsize, shuffle=False, num_workers=8, sampler=train_sampler, pin_memory=True)
 
-    test_data = datasets.ImageFolder(root=os.path.join(root, 'val'), transform=trans)
-    test_sampler = torch.utils.data.distributed.DistributedSampler(test_data)
-    test_dataloader = DataLoader(test_data, batch_size=batchsize, shuffle=False, num_workers=2, sampler=test_sampler) 
-    return train_dataloader, test_dataloader
+def GetImageNetDatasets(root=None):
+    root = Path(root or resolve_dataset_root("ImageNet")).expanduser()
+    train_transform, validation_transform = imagenet_transforms()
+    train_data = datasets.ImageFolder(
+        root=str(root / "train"),
+        transform=train_transform,
+    )
+    validation_data = datasets.ImageFolder(
+        root=str(root / "val"),
+        transform=validation_transform,
+    )
+    return train_data, validation_data
+
+
+def GetImageNet(batchsize, root=None):
+    """Build portable single-process ImageNet loaders.
+
+    Distributed evaluation must be implemented by an explicit distributed
+    entry point so a normal single-GPU run never depends on an initialized
+    process group.
+    """
+    train_data, validation_data = GetImageNetDatasets(root=root)
+    workers = resolve_num_workers(8)
+    train_dataloader = DataLoader(
+        train_data,
+        batch_size=batchsize,
+        shuffle=True,
+        num_workers=workers,
+        pin_memory=True,
+    )
+    validation_dataloader = DataLoader(
+        validation_data,
+        batch_size=batchsize,
+        shuffle=False,
+        num_workers=workers,
+        pin_memory=True,
+    )
+    return train_dataloader, validation_dataloader
